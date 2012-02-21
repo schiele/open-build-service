@@ -1205,7 +1205,7 @@ sub getbinaries_kiwiproduct {
 }
 
 sub getbinaries {
-  my ($buildinfo, $dir, $srcdir) = @_;
+  my ($buildinfo, $dir, $srcdir, $target_arch) = @_;
 
   mkdir_p($dir);
   my $kiwimode;
@@ -1223,9 +1223,9 @@ sub getbinaries {
   }
 
   my @bdep = @{$buildinfo->{'bdep'} || []};
-  my %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src'} @bdep;
-  my %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src'} @bdep;
-  @bdep = map {$_->{'name'}} grep {($_->{'repoarch'} || '') ne 'src'} @bdep;
+  my %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src' && ($_->{'target_arch'} || '') eq $target_arch } @bdep;
+  my %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src' && ($_->{'target_arch'} || '') eq $target_arch } @bdep;
+  @bdep = map {$_->{'name'}} grep {($_->{'repoarch'} || '') ne 'src' && ($_->{'target_arch'} || '') eq $target_arch } @bdep;
 
   my %done;
   my @todo = @bdep;
@@ -1241,7 +1241,7 @@ sub getbinaries {
     for my $repo (@{$buildinfo->{'syspath'} || []}) {
       last if !@todo;
       my $server = $repo->{'server'} || $buildinfo->{'reposerver'};
-      my $got = getbinaries_cache($dir, $server, $repo->{'project'}, $repo->{'repository'}, $buildinfo->{'arch'}, 1, \@todo);
+      my $got = getbinaries_cache($dir, $server, $repo->{'project'}, $repo->{'repository'}, ($target_arch || $buildinfo->{'arch'}), 1, \@todo);
       @todo = grep {!$got->{$_}} @todo;
     }
     die("getbinaries: missing packages: @todo\n") if @todo;
@@ -1265,7 +1265,7 @@ sub getbinaries {
     }
     my $nometa = 0;
     $nometa = 1 if $kiwimode || $repo->{'project'} ne $projid || $repo->{'repository'} ne $repoid;
-    my $got = getbinaries_cache($ddir, $repo->{'server'}, $repo->{'project'}, $repo->{'repository'}, $buildinfo->{'arch'}, $nometa, $dlbins);
+    my $got = getbinaries_cache($ddir, $repo->{'server'}, $repo->{'project'}, $repo->{'repository'}, ($target_arch || $buildinfo->{'arch'}), $nometa, $dlbins);
     for (keys %$got) {
       $done{$_} = $got->{$_}->{'name'};
       $meta{$_} = 1 if !$nometa && $got->{$_}->{'meta'};
@@ -1307,7 +1307,7 @@ sub getbinaries {
       $subpackre = substr($subpackre, 1);
       $subpackre = qr/$subpackre/;
     }
-    for my $dep (sort {"$a/" cmp "$b/"} map {$_->{'name'}} grep {!$_->{'notmeta'}} @{$buildinfo->{'bdep'} || []}) {
+    for my $dep (sort {"$a/" cmp "$b/"} map {$_->{'name'}} grep {!$_->{'notmeta'} && ($_->{'rpm_target'} || '') eq $target_arch} @{$buildinfo->{'bdep'} || []}) {
       my $m;
       $m = readstr("$dir/$dep.meta", 1) if $meta{$dep};
       if (!$m) {
@@ -1431,6 +1431,13 @@ sub dobuild {
   my $packid = $buildinfo->{'package'};
   my $repoid = $buildinfo->{'repository'};
   my $arch = $buildinfo->{'arch'};
+  my $hostarch = $buildinfo->{'hostarch'} || $arch;
+  my $targetarch = $buildinfo->{'target_arch'} || $arch;
+  my @additional_archs = @{$buildinfo->{'additional_archs'} || [] };
+  my @all_archs;
+  push @all_archs, $hostarch;
+  push @all_archs, map {$_->{'arch'}} @additional_archs;
+
   my $helperarch = $buildinfo->{'hostarch'} || $arch;
   my $kiwimode;
   $kiwimode = 1 if $buildinfo->{'file'} =~ /\.kiwi$/;
@@ -1447,10 +1454,6 @@ sub dobuild {
   print " using helper $helper" if $helper;
   print "\n";
 
-  my $srcdir    = "$buildroot/.build-srcdir";
-  my $pkgdir    = "$buildroot/.pkgs";
-  my $oldpkgdir = "$buildroot/.build.oldpackages";
-
   if ($vm_tmpfs_mode) {
     my @targs;
     # Note that the xen/kvm vmdisk_rootsize is in MB
@@ -1458,30 +1461,77 @@ sub dobuild {
     qsystem(@targs) && die("mount tmpfs failed: $!\n");
   }
 
-  unlink("$buildroot/.build.meta");
+  my $srcdir    = "$buildroot/.build-srcdir";
+ my $oldpkgdir = "$buildroot/.build.oldpackages";
+  my @meta;
+ 
+  rm_rf($oldpkgdir) if -d $oldpkgdir;
   rm_rf("$buildroot/.build.packages") if -d "$buildroot/.build.packages";
   rm_rf($srcdir) if -d $srcdir;
-  # changed to cleandir so that pkgdir can be a symlink
-  BSUtil::cleandir($pkgdir) if -d $pkgdir;
-  rm_rf($oldpkgdir) if -d $oldpkgdir;
 
-  my @meta;
-  print "fetching sources, ";
   mkdir($srcdir) || die("mkdir $srcdir: $!\n");
-  if ($deltamode) {
-    push @meta, getdeltasources($buildinfo, $srcdir);
-    print "packages, ";
-    getbinaries($buildinfo, $pkgdir, $srcdir);
-    undef $oldpkgdir;
-    my $spec = readstr("$statedir/worker/worker-deltagen.spec", 1) || readstr("worker-deltagen.spec");
-    writestr("$srcdir/worker-deltagen.spec", undef, $spec);
-    $buildinfo->{'file'} = 'worker-deltagen.spec';
-  } else {
-    push @meta, getsources($buildinfo, $srcdir);
-    print "packages, ";
-    push @meta, getbinaries($buildinfo, $pkgdir, $srcdir);
-  }
+ 
+  foreach my $needed_arch (@all_archs)
+  {
+    my $build_meta = ".build.meta";
+    my $pkdir = "$buildroot/.pkgs";
+    my $rpmlist = ".build.rpmlist";
+    my $rpm_target_arch = "";
 
+    if ($needed_arch ne $hostarch)
+    {
+      $build_meta = ".build.$needed_arch.meta";
+      $pkgdir = "$buildroot/.pkgs.$needed_arch";
+      $rpmlist = ".build.$needed_arch.rpmlist";
+      $rpm_target_arch = $needed_arch;
+    }
+  
+    unlink("$buildroot/$build_meta");
+    # changed to cleandir so that pkgdir can be a symlink
+    BSUtil::cleandir($pkgdir) if -d $pkgdir;
+
+     print "fetching sources, ";
+     if ($deltamode) {
+       push @meta, getdeltasources($buildinfo, $srcdir);
+       print "packages, ";
+       getbinaries($buildinfo, $pkgdir, $srcdir, $rpm_target_arch);
+       undef $oldpkgdir;
+       my $spec = readstr("$statedir/worker/worker-deltagen.spec", 1) || readstr("worker-deltagen.spec");
+       writestr("$srcdir/worker-deltagen.spec", undef, $spec);
+       $buildinfo->{'file'} = 'worker-deltagen.spec';
+    } else {
+       push @meta, getsources($buildinfo, $srcdir);
+       print "packages, ";
+       push @meta, getbinaries($buildinfo, $pkgdir, $srcdir, $target_arch);
+    }
+
+    # build rpmlist for build script
+    my @rpmlist;
+    my @bdep = @{$buildinfo->{'bdep'} || []};
+    for my $bdep (@bdep) {
+      next if $bdep->{'package'} || $bdep->{'noinstall'} || ($bdep->{'repoarch'} && $bdep->{'repoarch'} eq 'src' );
+      next if ( $bdep->{'target_arch'} || '') ne $rpm_target_arch;
+      my $bin = $bdep->{'name'};
+      if (-e "$pkgdir/$bin.rpm") {
+        push @rpmlist, "$bin $pkgdir/$bin.rpm";
+      } elsif (-e "$pkgdir/$bin.deb") {
+        push @rpmlist, "$bin $pkgdir/$bin.deb";
+      } else {
+        die("missing package: $bin\n");
+      }
+    }
+    push @rpmlist, "localkiwi $localkiwi/localkiwi.rpm" if $localkiwi && -e "$localkiwi/localkiwi.rpm";
+    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
+    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
+    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
+    if (grep {$_->{'cbpreinstall'}} @bdep) {
+      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
+    }
+    if (grep {$_->{'cbinstall'}} @bdep) {
+      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
+    }
+    writestr("$buildroot/$rpm_list", undef, join("\n", @rpmlist)."\n");
+  }
   writestr("$buildroot/.build.meta", undef, join("\n", @meta)."\n");
 
   getoldpackages($buildinfo, $oldpkgdir) if $oldpkgdir && !$kiwimode;
@@ -1501,32 +1551,6 @@ sub dobuild {
 
   my @args;
   push @args, $helper if $helper;
-
-  # build rpmlist for build script
-  my @rpmlist;
-  my @bdep = @{$buildinfo->{'bdep'} || []};
-  for my $bdep (@bdep) {
-    next if $bdep->{'package'} || $bdep->{'noinstall'} || ($bdep->{'repoarch'} && $bdep->{'repoarch'} eq 'src');
-    my $bin = $bdep->{'name'};
-    if (-e "$pkgdir/$bin.rpm") {
-      push @rpmlist, "$bin $pkgdir/$bin.rpm";
-    } elsif (-e "$pkgdir/$bin.deb") {
-      push @rpmlist, "$bin $pkgdir/$bin.deb";
-    } else {
-      die("missing package: $bin\n");
-    }
-  }
-  push @rpmlist, "localkiwi $localkiwi/localkiwi.rpm" if $localkiwi && -e "$localkiwi/localkiwi.rpm";
-  push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'}} @bdep);
-  push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'}} @bdep);
-  push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'}} @bdep);
-  if (grep {$_->{'cbpreinstall'}} @bdep) {
-    push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'}} @bdep);
-  }
-  if (grep {$_->{'cbinstall'}} @bdep) {
-    push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'}} @bdep);
-  }
-  writestr("$buildroot/.build.rpmlist", undef, join("\n", @rpmlist)."\n");
 
   print "building...\n";
 
@@ -1566,6 +1590,15 @@ sub dobuild {
   push @args, '--lint';
   push @args, '--dist', "$buildroot/.build.config";
   push @args, '--rpmlist', "$buildroot/.build.rpmlist";
+  
+  if ( @additional_archs )
+  {
+    foreach my $additional_arch (@additional_archs)
+    {
+      push @args, '--rpmlist-target', "$buildroot/.$additional_arch->{'arch'}.rpmlist";
+    }
+  }
+  push @args, '--targetarch', $targetarch if $targetarch;
   push @args, '--logfile', "$buildroot/.build.log";
   push @args, '--release', "$release" if defined $release;
   push @args, '--debug' if $buildinfo->{'debuginfo'};
