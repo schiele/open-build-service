@@ -1474,7 +1474,7 @@ sub dobuild {
   foreach my $needed_arch (@all_archs)
   {
     my $build_meta = ".build.meta";
-    my $pkdir = "$buildroot/.pkgs";
+    my $pkgdir = "$buildroot/.pkgs";
     my $rpmlist = ".build.rpmlist";
     my $rpm_target_arch = "";
 
@@ -1502,7 +1502,7 @@ sub dobuild {
     } else {
        push @meta, getsources($buildinfo, $srcdir);
        print "packages, ";
-       push @meta, getbinaries($buildinfo, $pkgdir, $srcdir, $target_arch);
+       push @meta, getbinaries($buildinfo, $pkgdir, $srcdir, $rpm_target_arch);
     }
 
     # build rpmlist for build script
@@ -1530,7 +1530,7 @@ sub dobuild {
     if (grep {$_->{'cbinstall'}} @bdep) {
       push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
     }
-    writestr("$buildroot/$rpm_list", undef, join("\n", @rpmlist)."\n");
+    writestr("$buildroot/$rpmlist", undef, join("\n", @rpmlist)."\n");
   }
   writestr("$buildroot/.build.meta", undef, join("\n", @meta)."\n");
 
