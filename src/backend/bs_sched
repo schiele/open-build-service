@@ -649,6 +649,8 @@ sub set_building {
   my %cbpdeps = map {$_ => 1} @cbpdeps;
   my %cbdeps = map {$_ => 1} @cbdeps;
   my %edeps = map {$_ => 1} @$edeps;
+  my $target = Build::get_target($bconf);
+
   @bdeps = unify(@pdeps, @vmdeps, @$edeps, @bdeps, @cbpdeps, @cbdeps);
   for (@bdeps) {
     $_ = {'name' => $_};
@@ -676,7 +678,7 @@ sub set_building {
     'reposerver' => $BSConfig::reposerver,
     'job' => $job,
     'arch' => $myarch,
-#    'target_arch' =>, #TODO used for build.sh --target
+    'target' => $target, #TODO used for build.sh --target
     'additional_archs' => \@additional_archs,
     'reason' => $reason->{'explain'},
     'readytime' => $now,

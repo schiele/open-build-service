@@ -1432,7 +1432,7 @@ sub dobuild {
   my $repoid = $buildinfo->{'repository'};
   my $arch = $buildinfo->{'arch'};
   my $hostarch = $buildinfo->{'hostarch'} || $arch;
-  my $targetarch = $buildinfo->{'target_arch'} || $arch;
+  my $target = $buildinfo->{'target'} || $arch;
   my @additional_archs = @{$buildinfo->{'additional_archs'} || [] };
   my @all_archs;
   push @all_archs, $hostarch;
@@ -1598,7 +1598,7 @@ sub dobuild {
       push @args, '--rpmlist-target', "$buildroot/.$additional_arch->{'arch'}.rpmlist";
     }
   }
-  push @args, '--target', $targetarch if $targetarch;
+  push @args, '--target', $target if $target;
   push @args, '--logfile', "$buildroot/.build.log";
   push @args, '--release', "$release" if defined $release;
   push @args, '--debug' if $buildinfo->{'debuginfo'};
