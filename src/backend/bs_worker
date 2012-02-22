@@ -1432,18 +1432,22 @@ sub dobuild {
   my $repoid = $buildinfo->{'repository'};
   my $arch = $buildinfo->{'arch'};
   my $hostarch = $buildinfo->{'hostarch'} || $arch;
-  my $target = $buildinfo->{'target'} || $arch;
   my @additional_archs = @{$buildinfo->{'additional_archs'} || [] };
   my @all_archs;
-  push @all_archs, $hostarch;
+  push @all_archs, $hostarch, $arch;
   push @all_archs, map {$_->{'arch'}} @additional_archs;
 
-  my $helperarch = $buildinfo->{'hostarch'} || $arch;
+  # nicer way for uniq?
+  my (%temp, @uniq);
+  @uniq = grep { $temp{$_}++ } @all_archs;
+  @all_archs = @uniq;
+
   my $kiwimode;
   $kiwimode = 1 if $buildinfo->{'file'} =~ /\.kiwi$/;
   my $deltamode;
   $deltamode = 1 if $buildinfo->{'file'} eq '_delta';
 
+  my $helperarch = $buildinfo->{'hostarch'} || $arch;
   my $helper = '';
   /^\Q$helperarch\E:(.*)$/ && ($helper = $1) for @{$BSCando::cando{$hostarch}};
 
@@ -1462,7 +1466,7 @@ sub dobuild {
   }
 
   my $srcdir    = "$buildroot/.build-srcdir";
- my $oldpkgdir = "$buildroot/.build.oldpackages";
+  my $oldpkgdir = "$buildroot/.build.oldpackages";
   my @meta;
  
   rm_rf($oldpkgdir) if -d $oldpkgdir;
@@ -1473,13 +1477,19 @@ sub dobuild {
  
   foreach my $needed_arch (@all_archs)
   {
-    my $build_meta = ".build.meta";
-    my $pkgdir = "$buildroot/.pkgs";
-    my $rpmlist = ".build.rpmlist";
-    my $rpm_target_arch = "";
+    my ( $build_meta, $pkgdir, $rpmlist, $rpm_target_arch, $hostarch);
 
-    if ($needed_arch ne $hostarch)
-    {
+    if ($needed_arch eq $hostarch) {
+      $build_meta = ".build.meta";
+      $pkgdir = "$buildroot/.pkgs";
+      $rpmlist = ".build.rpmlist";
+      $rpm_target_arch = $hostarch;
+    } elsif ($needed_arch eq $arch) {
+      $build_meta = ".build.$needed_arch.meta";
+      $pkgdir = "$buildroot/.$needed_arch.pkgs";
+      $rpmlist = ".build.$needed_arch.rpmlist";
+      $rpm_target_arch = "";
+    } else {
       $build_meta = ".build.$needed_arch.meta";
       $pkgdir = "$buildroot/.pkgs.$needed_arch";
       $rpmlist = ".build.$needed_arch.rpmlist";
@@ -1598,7 +1608,7 @@ sub dobuild {
       push @args, '--rpmlist-target', "$buildroot/.$additional_arch->{'arch'}.rpmlist";
     }
   }
-  push @args, '--target', $target if $target;
+  push @args, '--target', $arch;
   push @args, '--logfile', "$buildroot/.build.log";
   push @args, '--release', "$release" if defined $release;
   push @args, '--debug' if $buildinfo->{'debuginfo'};
