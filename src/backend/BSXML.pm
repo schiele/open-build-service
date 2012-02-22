@@ -453,6 +453,7 @@ our $buildinfo = [
 	'target_arch',  # maybe not needed if arch and hostarch are used properly
      [[ 'additional_archs' => 
         'arch', 
+	'sysroot',
      ]],                # used to set additional arches packages have to be downloaded for
 	'error',
 	'srcmd5',
