@@ -1431,7 +1431,7 @@ sub dobuild {
   my $packid = $buildinfo->{'package'};
   my $repoid = $buildinfo->{'repository'};
   my $arch = $buildinfo->{'arch'};
-  my $hostarch = $buildinfo->{'hostarch'} || $arch;
+  my $hostarch = ($buildinfo->{'hostarch'} || $arch);
   my @additional_archs = @{$buildinfo->{'additional_archs'} || [] };
   my @all_archs;
   push @all_archs, $hostarch, $arch;
@@ -1477,7 +1477,7 @@ sub dobuild {
  
   foreach my $needed_arch (@all_archs)
   {
-    my ( $build_meta, $pkgdir, $rpmlist, $rpm_target_arch, $hostarch);
+    my ( $build_meta, $pkgdir, $rpmlist, $rpm_target_arch);
 
     if ($needed_arch eq $hostarch) {
       $build_meta = ".build.meta";
