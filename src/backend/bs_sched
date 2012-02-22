@@ -641,7 +641,7 @@ sub set_building {
   my @vmdeps = Build::get_vminstalls($bconf);
   my @cbpdeps = Build::get_cbpreinstalls($bconf); # crossbuild preinstall
   my @cbdeps = Build::get_cbinstalls($bconf);  # crossbuild install
-  my @addtional_archs = Build::get_additional_archs($bconf);
+  my @additional_archs = Build::get_additional_archs($bconf);
   my %runscripts = map {$_ => 1} Build::get_runscripts($bconf);
   my %bdeps = map {$_ => 1} @bdeps;
   my %pdeps = map {$_ => 1} @pdeps;
