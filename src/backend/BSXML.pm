@@ -450,7 +450,6 @@ our $buildinfo = [
 	'job',
 	'arch',
 	'hostarch',     # for cross build
-	'target',  # maybe not needed if arch and hostarch are used properly
      [[ 'additional_archs' => 
         'arch', 
 	'sysroot',
