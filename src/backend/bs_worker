@@ -1598,7 +1598,7 @@ sub dobuild {
       push @args, '--rpmlist-target', "$buildroot/.$additional_arch->{'arch'}.rpmlist";
     }
   }
-  push @args, '--targetarch', $targetarch if $targetarch;
+  push @args, '--target', $targetarch if $targetarch;
   push @args, '--logfile', "$buildroot/.build.log";
   push @args, '--release', "$release" if defined $release;
   push @args, '--debug' if $buildinfo->{'debuginfo'};
