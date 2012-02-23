@@ -1605,7 +1605,7 @@ sub dobuild {
   {
     foreach my $additional_arch (@additional_archs)
     {
-      push @args, '--rpmlist-target', "$buildroot/.$additional_arch->{'arch'}.rpmlist";
+      push @args, '--rpmlist-target', "$buildroot/.$additional_arch->{'arch'}.rpmlist" if $additional_arch ne $hostarch;
     }
   }
   push @args, '--target', $arch;
