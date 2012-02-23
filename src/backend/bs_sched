@@ -660,6 +660,7 @@ sub set_building {
     $_->{'runscripts'} = 1 if $runscripts{$_->{'name'}};
     $_->{'notmeta'} = 1 unless $edeps{$_->{'name'}};
     $_->{'noinstall'} = 1 if $packtype eq 'kiwi' && $edeps{$_->{'name'}} && !($bdeps{$_->{'name'}} || $vmdeps{$_->{'name'}} || $pdeps{$_->{'name'}});
+    $_->{'target_arch'} = $bconf->{'hostarch'} if $bconf->{'hostarch'} && ($pdeps{$_->{'name'}} || $vmdeps{$_->{'name'}})
   }
   if ($info->{'extrasource'}) {
     push @bdeps, map {{
