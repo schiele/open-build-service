@@ -485,7 +485,7 @@ our $buildinfo = [
 	'version',
 	'release',
 	'arch',
-	'target_arch',  # determine for which arch this package is needed, works even with noarch packages
+	'neededbyhost',  # if set this package will be installed in the host system during crossbuild
 	'project',
 	'repository',
 	'repoarch',

@@ -671,7 +671,7 @@ sub set_building {
       # it needs to get added twice, so it available for target arches as well.
       push @target_bdeps, {'name' => $_->{'name'}, } if ($origin_bdeps{$_->{'name'}} || $edeps{$_->{'name'}});
 
-      $_->{'target_arch'} = $bconf->{'hostarch'}; 
+      $_->{'neededbyhost'} = 1; 
     }
   }
 

@@ -1205,7 +1205,7 @@ sub getbinaries_kiwiproduct {
 }
 
 sub getbinaries {
-  my ($buildinfo, $dir, $srcdir, $target_arch) = @_;
+  my ($buildinfo, $dir, $srcdir, $target_arch, $neededbyhost ) = @_;
 
   mkdir_p($dir);
   my $kiwimode;
@@ -1223,9 +1223,9 @@ sub getbinaries {
   }
 
   my @bdep = @{$buildinfo->{'bdep'} || []};
-  my %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src' && ($_->{'target_arch'} || '') eq $target_arch } @bdep;
-  my %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src' && ($_->{'target_arch'} || '') eq $target_arch } @bdep;
-  @bdep = map {$_->{'name'}} grep {($_->{'repoarch'} || '') ne 'src' && ($_->{'target_arch'} || '') eq $target_arch } @bdep;
+  my %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src' && ($_->{'neededbyhost'} || 0) == $neededbyhost } @bdep;
+  my %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src' && ($_->{'neededbyhost'} || 0) == $neededbyhost } @bdep;
+  @bdep = map {$_->{'name'}} grep {($_->{'repoarch'} || '') ne 'src' && ($_->{'neededbyhost'} || 0) == $neededbyhost } @bdep;
 
   my %done;
   my @todo = @bdep;
@@ -1475,25 +1475,24 @@ sub dobuild {
 
   mkdir($srcdir) || die("mkdir $srcdir: $!\n");
  
-  foreach my $needed_arch (@all_archs)
+  foreach my $current_arch (@all_archs)
   {
-    my ( $build_meta, $pkgdir, $rpmlist, $rpm_target_arch);
+    my ( $build_meta, $pkgdir, $rpmlist);
+    my $hostsystemonly = 0;
 
-    if ($needed_arch eq $hostarch) {
+    if ($current_arch eq $hostarch) {
       $build_meta = ".build.meta";
       $pkgdir = "$buildroot/.pkgs";
       $rpmlist = ".build.rpmlist";
-      $rpm_target_arch = $hostarch;
-    } elsif ($needed_arch eq $arch) {
-      $build_meta = ".build.$needed_arch.meta";
-      $pkgdir = "$buildroot/.$needed_arch.pkgs";
-      $rpmlist = ".build.$needed_arch.rpmlist";
-      $rpm_target_arch = "";
+      $hostsystemonly = 1;
+    } elsif ($current_arch eq $arch) {
+      $build_meta = ".build.$current_arch.meta";
+      $pkgdir = "$buildroot/.$current_arch.pkgs";
+      $rpmlist = ".build.$current_arch.rpmlist";
     } else {
-      $build_meta = ".build.$needed_arch.meta";
-      $pkgdir = "$buildroot/.pkgs.$needed_arch";
-      $rpmlist = ".build.$needed_arch.rpmlist";
-      $rpm_target_arch = $needed_arch;
+      $build_meta = ".build.$current_arch.meta";
+      $pkgdir = "$buildroot/.pkgs.$current_arch";
+      $rpmlist = ".build.$current_arch.rpmlist";
     }
   
     unlink("$buildroot/$build_meta");
@@ -1504,7 +1503,7 @@ sub dobuild {
      if ($deltamode) {
        push @meta, getdeltasources($buildinfo, $srcdir);
        print "packages, ";
-       getbinaries($buildinfo, $pkgdir, $srcdir, $rpm_target_arch);
+       getbinaries($buildinfo, $pkgdir, $srcdir, $current_arch, $hostsystemonly);
        undef $oldpkgdir;
        my $spec = readstr("$statedir/worker/worker-deltagen.spec", 1) || readstr("worker-deltagen.spec");
        writestr("$srcdir/worker-deltagen.spec", undef, $spec);
@@ -1512,7 +1511,7 @@ sub dobuild {
     } else {
        push @meta, getsources($buildinfo, $srcdir);
        print "packages, ";
-       push @meta, getbinaries($buildinfo, $pkgdir, $srcdir, $rpm_target_arch);
+       push @meta, getbinaries($buildinfo, $pkgdir, $srcdir, $current_arch, $hostsystemonly);
     }
 
     # build rpmlist for build script
@@ -1520,7 +1519,7 @@ sub dobuild {
     my @bdep = @{$buildinfo->{'bdep'} || []};
     for my $bdep (@bdep) {
       next if $bdep->{'package'} || $bdep->{'noinstall'} || ($bdep->{'repoarch'} && $bdep->{'repoarch'} eq 'src' );
-      next if ( $bdep->{'target_arch'} || '') ne $rpm_target_arch;
+      next if ( $bdep->{'neededbyhost'} || 0 ) !=  $hostsystemonly;
       my $bin = $bdep->{'name'};
       if (-e "$pkgdir/$bin.rpm") {
         push @rpmlist, "$bin $pkgdir/$bin.rpm";
@@ -1531,14 +1530,14 @@ sub dobuild {
       }
     }
     push @rpmlist, "localkiwi $localkiwi/localkiwi.rpm" if $localkiwi && -e "$localkiwi/localkiwi.rpm";
-    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
-    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
-    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
+    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} && ($_->{'neededbyhost'} || 0) == $hostsystemonly } @bdep);
+    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} && ($_->{'neededbyhost'} || 0) == $hostsystemonly } @bdep);
+    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} && ($_->{'neededbyhost'} || 0) == $hostsystemonly } @bdep);
     if (grep {$_->{'cbpreinstall'}} @bdep) {
-      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
+      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} && ($_->{'neededbyhost'} || 0) == $hostsystemonly } @bdep);
     }
     if (grep {$_->{'cbinstall'}} @bdep) {
-      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} && ($_->{'target_arch'} || '' ) eq $rpm_target_arch } @bdep);
+      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} &&  ($_->{'neededbyhost'} || 0) == $hostsystemonly } @bdep);
     }
     writestr("$buildroot/$rpmlist", undef, join("\n", @rpmlist)."\n");
   }
