@@ -644,6 +644,7 @@ sub set_building {
   my @cbpdeps = Build::get_cbpreinstalls($bconf); # crossbuild preinstall
   my @cbdeps = Build::get_cbinstalls($bconf);  # crossbuild install
   my @sysroots = Build::get_sysroots($bconf);
+  my $crossbuild = Build::get_crossbuild($bconf);
   my %runscripts = map {$_ => 1} Build::get_runscripts($bconf);
   my %bdeps = map {$_ => 1} @bdeps;
   my %origin_bdeps = map {$_ => 1} @origin_bdeps;
@@ -653,8 +654,11 @@ sub set_building {
   my %cbdeps = map {$_ => 1} @cbdeps;
   my %edeps = map {$_ => 1} @$edeps;
 
+  my $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
+
   my @target_bdeps;
   @bdeps = unify(@pdeps, @vmdeps, @$edeps, @bdeps, @cbpdeps, @cbdeps);
+
   for (@bdeps) {
     $_ = {'name' => $_};
     $_->{'preinstall'} = 1 if $pdeps{$_->{'name'}};
@@ -671,7 +675,7 @@ sub set_building {
       # it needs to get added twice, so it available for target arches as well.
       push @target_bdeps, {'name' => $_->{'name'}, } if ($origin_bdeps{$_->{'name'}} || $edeps{$_->{'name'}});
 
-      $_->{'neededbyhost'} = 1; 
+      $_->{'sysroot'} = $hostsysroot->{'path'}; 
     }
   }
 
@@ -694,7 +698,6 @@ sub set_building {
     'reposerver' => $BSConfig::reposerver,
     'job' => $job,
     'arch' => $myarch,
-    'sysroots' => \@sysroots,
     'reason' => $reason->{'explain'},
     'readytime' => $now,
     'srcmd5' => $pdata->{'srcmd5'},
@@ -708,6 +711,8 @@ sub set_building {
     'path' => $searchpath,
     'needed' => $needed,
   };
+  $binfo->{'sysroots'} = \@sysroots if (@sysroots);
+  $binfo->{'crossbuild'} = $crossbuild if ($crossbuild);
   $binfo->{'syspath'} = $syspath if $syspath;
   $binfo->{'hostarch'} = $bconf->{'hostarch'} if $bconf->{'hostarch'};
   if ($pdata->{'revtime'}) {
