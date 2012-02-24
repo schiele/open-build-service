@@ -1437,10 +1437,8 @@ sub dobuild {
   push @all_archs, $hostarch, $arch;
   push @all_archs, map {$_->{'arch'}} @additional_archs;
 
-  # nicer way for uniq?
-  my (%temp, @uniq);
-  @uniq = grep { $temp{$_}++ } @all_archs;
-  @all_archs = @uniq;
+  my %uniq = map{ $_, 1} @all_archs;
+  @all_archs = keys %uniq;
 
   my $kiwimode;
   $kiwimode = 1 if $buildinfo->{'file'} =~ /\.kiwi$/;
