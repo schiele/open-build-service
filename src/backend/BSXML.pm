@@ -450,10 +450,13 @@ our $buildinfo = [
 	'job',
 	'arch',
 	'hostarch',     # for cross build
-     [[ 'additional_archs' => 
+     [[ 'sysroots' => 
+        'alias',
+        'prj',
+        'repo',	
         'arch', 
 	'sysroot',
-     ]],                # used to set additional arches packages have to be downloaded for
+     ]],                # used to set additional sysroots to get set up
 	'error',
 	'srcmd5',
 	'verifymd5',
@@ -485,7 +488,7 @@ our $buildinfo = [
 	'version',
 	'release',
 	'arch',
-	'neededbyhost',  # if set this package will be installed in the host system during crossbuild
+	'sysroot',  # if set this package will be installed in the specified sysroot crossbuild
 	'project',
 	'repository',
 	'repoarch',
