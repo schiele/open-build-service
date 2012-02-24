@@ -1485,10 +1485,6 @@ sub dobuild {
       $pkgdir = "$buildroot/.pkgs";
       $rpmlist = ".build.rpmlist";
       $hostsystemonly = 1;
-    } elsif ($current_arch eq $arch) {
-      $build_meta = ".build.$current_arch.meta";
-      $pkgdir = "$buildroot/.$current_arch.pkgs";
-      $rpmlist = ".build.$current_arch.rpmlist";
     } else {
       $build_meta = ".build.$current_arch.meta";
       $pkgdir = "$buildroot/.pkgs.$current_arch";
