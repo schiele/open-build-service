@@ -452,11 +452,11 @@ our $buildinfo = [
 	'hostarch',     # for cross build
 	'crossbuild',
      [[ 'sysroots' => 
-        'alias',
-        'project',
-        'repository',	
-        'arch', 
-	'path',
+  'alias',
+  'project',
+  'repository',	
+  'arch', 
+  'path',
      ]],                # used to set additional sysroots to get set up
 	'error',
 	'srcmd5',
