@@ -710,8 +710,8 @@ sub set_building {
     'bdep' => \@bdeps,
     'path' => $searchpath,
     'needed' => $needed,
+    'sysroots' => \@sysroots,
   };
-  $binfo->{'sysroots'} = \@sysroots if (@sysroots);
   $binfo->{'crossbuild'} = $crossbuild if ($crossbuild);
   $binfo->{'syspath'} = $syspath if $syspath;
   $binfo->{'hostarch'} = $bconf->{'hostarch'} if $bconf->{'hostarch'};
