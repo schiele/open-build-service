@@ -697,8 +697,7 @@ sub set_building {
 
     foreach my $sr (keys %crossdeps) {
       for (@{$crossdeps{$sr}}) {
-        my $csr = (grep {$_->{'label'} eq $_ } @sysroots)[0]; 
-        push @bdeps, { name => $_, sysroot => $csr->{'label'} };
+        push @bdeps, { name => $_, sysroot => $sr };
       }
     }
   }
