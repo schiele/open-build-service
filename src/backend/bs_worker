@@ -1236,7 +1236,6 @@ sub getbinaries {
     %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src' && ($_->{'sysroot'} || '') eq $sysrootlabel } @bdep;
     %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src' &&  ($_->{'sysroot'}|| '') eq $sysrootlabel  } @bdep;
     @bdep = map {$_->{'name'}} grep {($_->{'repoarch'} || '') ne 'src' && ($_->{'sysroot'}|| '') eq $sysrootlabel  } @bdep;
-print __LINE__, "@bdep: ", Dumper(@bdep), " sysroot: ", Dumper($sysroot);
   } else {
     %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src' } @bdep;
     %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src' } @bdep;
