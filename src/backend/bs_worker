@@ -1211,10 +1211,8 @@ sub getbinaries {
   my $sysroot;
 	if ($crossbuild)
 	{
-print "sysrootalias ", $sysrootalias;
     my @sysroots = @{$buildinfo->{'sysroots'}};
     $sysroot = (grep {$_->{'alias'} eq $sysrootalias } @sysroots)[0];
-print __LINE__, " sysroot: ", Dumper($sysroot);
     my $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
   }
 
@@ -1698,7 +1696,6 @@ sub dobuild {
   push @args, '--linksources' if $localkiwi;
   push @args, '--signdummy' if $kiwimode && (!$localkiwi || ! -e "$localkiwi/localkiwi.rpm") && $buildinfo->{'imagetype'} && $buildinfo->{'imagetype'}->[0] eq 'product' && -e "$statedir/build/signdummy";
   push @args, "$srcdir/$buildinfo->{'file'}";
-print __LINE__, " args: ", Dumper(@args), "\n";
   qsystem(@args);
 
   print "\n";
@@ -2093,7 +2090,6 @@ send_state('building', $port, $hostarch, $buildinfo->{'reposerver'});
 
 my $ex;
 eval {
-print Dumper($buildinfo);
   $ex = dobuild($buildinfo);
 };
 if ($@) {
