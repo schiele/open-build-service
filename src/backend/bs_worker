@@ -1453,12 +1453,12 @@ sub fetch_and_prepare_rpmlist {
 
 	my $crossbuild = ( $buildinfo->{'crossbuild'} || 0 );
   my $sysroot;
+
 	if ($crossbuild)
 	{
-print "sysroot alias: ", $sysrootalias;
     my @sysroots = @{$buildinfo->{'sysroots'}};
     $sysroot = (grep {$_->{'alias'} eq $sysrootalias } @sysroots)[0];
-    my $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
+    my $hostsysroot = (grep {$_->{'alias'} eq $buildinfo->{'hostsysroot'} } @sysroots)[0];
 
     if ($sysroot->{'alias'} ne $hostsysroot->{'alias'}) {
       $build_meta = ".build.$sysroot->{'alias'}.meta";
@@ -1504,14 +1504,14 @@ print "sysroot alias: ", $sysrootalias;
       }
     }
     push @rpmlist, "localkiwi $localkiwi/localkiwi.rpm" if $localkiwi && -e "$localkiwi/localkiwi.rpm";
-    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} && $_->{'sysroot'} eq $sysroot->{'path'} } @bdep);
-    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} && $_->{'sysroot'} eq $sysroot->{'path'} } @bdep);
-    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} && $_->{'sysroot'} eq $sysroot->{'path'} } @bdep);
+    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} && $_->{'sysroot'} eq $sysroot->{'alias'} } @bdep);
+    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} && $_->{'sysroot'} eq $sysroot->{'alias'} } @bdep);
+    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} && $_->{'sysroot'} eq $sysroot->{'alias'} } @bdep);
     if (grep {$_->{'cbpreinstall'}} @bdep) {
-      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} && $_->{'sysroot'} eq $sysroot->{'path'} } @bdep);
+      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} && $_->{'sysroot'} eq $sysroot->{'alias'} } @bdep);
     }
     if (grep {$_->{'cbinstall'}} @bdep) {
-      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} && $_->{'sysroot'} eq $sysroot->{'path'} } @bdep);
+      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} && $_->{'sysroot'} eq $sysroot->{'alias'} } @bdep);
     }
   } else {
     for my $bdep (@bdep) {
@@ -1552,10 +1552,6 @@ sub dobuild {
   my @sysroots = @{$buildinfo->{'sysroots'} || [] };
 	my $crossbuild = ($buildinfo->{'crossbuild'} || 0);
 
-  if (@sysroots < 1)
-  {
-    $crossbuild = 0;
-  }
   my @all_archs;
   push @all_archs, $hostarch, $arch;
   push @all_archs, map {$_->{'arch'}} @sysroots;
@@ -1563,8 +1559,12 @@ sub dobuild {
   my %uniq = map{ $_, 1} @all_archs;
   @all_archs = keys %uniq;
 
-  my $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];# if $do_crossbuild;
-  my $targetsysroot = (grep {$_->{'arch'} eq $arch } @sysroots)[0];
+  my ($hostsysroot, $targetsysroot);
+
+  if ($crossbuild) {
+    $hostsysroot = (grep {$_->{'alias'} eq $buildinfo->{'hostsysroot'} } @sysroots)[0];# if $do_crossbuild;
+    $targetsysroot = (grep {$_->{'alias'} eq $buildinfo->{'targetsysroot'} } @sysroots)[0];
+  }
 
   my $kiwimode;
   $kiwimode = 1 if $buildinfo->{'file'} =~ /\.kiwi$/;
