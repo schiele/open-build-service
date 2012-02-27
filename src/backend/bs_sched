@@ -661,10 +661,10 @@ sub set_building {
   my ($hostsysroot, $targetsysroot);
   if ($crossbuild) {
     $hostsysroot = Build::get_hostsysroot($bconf);
-    $hostsysroot = (grep {$_->{'alias'} eq $hostsysroot } @sysroots)[0];
+    $hostsysroot = (grep {$_->{'label'} eq $hostsysroot } @sysroots)[0];
 
     $targetsysroot = Build::get_targetsysroot($bconf);
-    $targetsysroot = (grep {$_->{'alias'} eq $targetsysroot } @sysroots)[0];
+    $targetsysroot = (grep {$_->{'label'} eq $targetsysroot } @sysroots)[0];
   }
 
   my @target_bdeps;
@@ -687,7 +687,7 @@ sub set_building {
       # it needs to get added twice, so it available for target arches as well.
       push @target_bdeps, {'name' => $_->{'name'}, } if ($origin_bdeps{$_->{'name'}} || $edeps{$_->{'name'}});
 
-      $_->{'sysroot'} = $hostsysroot->{'alias'}; 
+      $_->{'sysroot'} = $hostsysroot->{'label'}; 
     }
   }
 
@@ -697,8 +697,8 @@ sub set_building {
 
     foreach my $sr (keys %crossdeps) {
       for (@{$crossdeps{$sr}}) {
-        my $csr = (grep {$_->{'alias'} eq $_ } @sysroots)[0]; 
-        push @bdeps, { name => $_, sysroot => $csr->{'alias'} };
+        my $csr = (grep {$_->{'label'} eq $_ } @sysroots)[0]; 
+        push @bdeps, { name => $_, sysroot => $csr->{'label'} };
       }
     }
   }
@@ -710,11 +710,11 @@ sub set_building {
     }} @{$info->{'extrasource'}};
   }
 
-  # set sysroot to targetsysroot's alias where no sysrot is set
+  # set sysroot to targetsysroot's label where no sysrot is set
   if ($crossbuild) {
     for (@bdeps) {
       if ( not defined $_->{'sysroot'} ) {
-        $_->{'sysroot'} = $targetsysroot->{'alias'}
+        $_->{'sysroot'} = $targetsysroot->{'label'}
       }
     }
   }
@@ -740,11 +740,11 @@ sub set_building {
     'bdep' => \@bdeps,
     'path' => $searchpath,
     'needed' => $needed,
-    'sysroots' => \@sysroots,
+    'sysroot' => \@sysroots,
   };
   $binfo->{'crossbuild'} = $crossbuild if ($crossbuild);
-  $binfo->{'hostsysroot'} = $hostsysroot->{'alias'} if ($crossbuild);
-  $binfo->{'targetsysroot'} = $targetsysroot->{'alias'} if ($crossbuild);
+  $binfo->{'hostsysroot'} = $hostsysroot->{'label'} if ($crossbuild);
+  $binfo->{'targetsysroot'} = $targetsysroot->{'label'} if ($crossbuild);
 
   $binfo->{'syspath'} = $syspath if $syspath;
   $binfo->{'hostarch'} = $bconf->{'hostarch'} if $bconf->{'hostarch'};

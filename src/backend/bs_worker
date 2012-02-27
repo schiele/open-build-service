@@ -1205,14 +1205,14 @@ sub getbinaries_kiwiproduct {
 }
 
 sub getbinaries {
-  my ($buildinfo, $dir, $srcdir, $sysrootalias) = @_;
+  my ($buildinfo, $dir, $srcdir, $sysrootlabel) = @_;
 
 	my $crossbuild = ( $buildinfo->{'crossbuild'} || 0 );
   my $sysroot;
 	if ($crossbuild)
 	{
-    my @sysroots = @{$buildinfo->{'sysroots'}};
-    $sysroot = (grep {$_->{'alias'} eq $sysrootalias } @sysroots)[0];
+    my @sysroots = @{$buildinfo->{'sysroot'}};
+    $sysroot = (grep {$_->{'label'} eq $sysrootlabel } @sysroots)[0];
     my $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
   }
 
@@ -1446,7 +1446,7 @@ sub patchkiwi {
 }
 
 sub fetch_and_prepare_rpmlist {
-  my ($buildinfo, $srcdir, $darch, $sysrootalias) = @_; 
+  my ($buildinfo, $srcdir, $darch, $sysrootlabel) = @_; 
 
   my $build_meta = ".build.meta";
   my $pkgdir = "$buildroot/.pkgs";
@@ -1456,13 +1456,13 @@ sub fetch_and_prepare_rpmlist {
 
 	if ($crossbuild)
 	{
-    my @sysroots = @{$buildinfo->{'sysroots'}};
-    $sysroot = (grep {$_->{'alias'} eq $sysrootalias } @sysroots)[0];
-    my $hostsysroot = (grep {$_->{'alias'} eq $buildinfo->{'hostsysroot'} } @sysroots)[0];
+    my @sysroots = @{$buildinfo->{'sysroot'}};
+    $sysroot = (grep {$_->{'label'} eq $sysrootlabel } @sysroots)[0];
+    my $hostsysroot = (grep {$_->{'label'} eq $buildinfo->{'hostsysroot'} } @sysroots)[0];
 
-    if ($sysroot->{'alias'} ne $hostsysroot->{'alias'}) {
-      $build_meta = ".build.$sysroot->{'alias'}.meta";
-      $pkgdir = "$buildroot/.pkgs.$sysroot->{'alias'}";
+    if ($sysroot->{'label'} ne $hostsysroot->{'label'}) {
+      $build_meta = ".build.$sysroot->{'label'}.meta";
+      $pkgdir = "$buildroot/.pkgs.$sysroot->{'label'}";
     }
   }
   # changed to cleandir so that pkgdir can be a symlink
@@ -1476,14 +1476,14 @@ sub fetch_and_prepare_rpmlist {
    if ($deltamode) {
      push @meta, getdeltasources($buildinfo, $srcdir);
      print "packages, ";
-     getbinaries($buildinfo, $pkgdir, $srcdir, $sysrootalias);
+     getbinaries($buildinfo, $pkgdir, $srcdir, $sysrootlabel);
      my $spec = readstr("$statedir/worker/worker-deltagen.spec", 1) || readstr("worker-deltagen.spec");
      writestr("$srcdir/worker-deltagen.spec", undef, $spec);
      $buildinfo->{'file'} = 'worker-deltagen.spec';
   } else {
      push @meta, getsources($buildinfo, $srcdir);
      print "packages, ";
-     push @meta, getbinaries($buildinfo, $pkgdir, $srcdir, $sysrootalias);
+     push @meta, getbinaries($buildinfo, $pkgdir, $srcdir, $sysrootlabel);
   }
 
   # build rpmlist for build script
@@ -1504,14 +1504,14 @@ sub fetch_and_prepare_rpmlist {
       }
     }
     push @rpmlist, "localkiwi $localkiwi/localkiwi.rpm" if $localkiwi && -e "$localkiwi/localkiwi.rpm";
-    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} && $_->{'sysroot'} eq $sysroot->{'alias'} } @bdep);
-    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} && $_->{'sysroot'} eq $sysroot->{'alias'} } @bdep);
-    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} && $_->{'sysroot'} eq $sysroot->{'alias'} } @bdep);
+    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} && $_->{'sysroot'} eq $sysroot->{'label'} } @bdep);
+    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} && $_->{'sysroot'} eq $sysroot->{'label'} } @bdep);
+    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} && $_->{'sysroot'} eq $sysroot->{'label'} } @bdep);
     if (grep {$_->{'cbpreinstall'}} @bdep) {
-      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} && $_->{'sysroot'} eq $sysroot->{'alias'} } @bdep);
+      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} && $_->{'sysroot'} eq $sysroot->{'label'} } @bdep);
     }
     if (grep {$_->{'cbinstall'}} @bdep) {
-      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} && $_->{'sysroot'} eq $sysroot->{'alias'} } @bdep);
+      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} && $_->{'sysroot'} eq $sysroot->{'label'} } @bdep);
     }
   } else {
     for my $bdep (@bdep) {
@@ -1549,7 +1549,7 @@ sub dobuild {
   my $repoid = $buildinfo->{'repository'};
   my $arch = $buildinfo->{'arch'};
   my $hostarch = ($buildinfo->{'hostarch'} || $arch);
-  my @sysroots = @{$buildinfo->{'sysroots'} || [] };
+  my @sysroots = @{$buildinfo->{'sysroot'} || [] };
 	my $crossbuild = ($buildinfo->{'crossbuild'} || 0);
 
   my @all_archs;
@@ -1562,8 +1562,8 @@ sub dobuild {
   my ($hostsysroot, $targetsysroot);
 
   if ($crossbuild) {
-    $hostsysroot = (grep {$_->{'alias'} eq $buildinfo->{'hostsysroot'} } @sysroots)[0];# if $do_crossbuild;
-    $targetsysroot = (grep {$_->{'alias'} eq $buildinfo->{'targetsysroot'} } @sysroots)[0];
+    $hostsysroot = (grep {$_->{'label'} eq $buildinfo->{'hostsysroot'} } @sysroots)[0];# if $do_crossbuild;
+    $targetsysroot = (grep {$_->{'label'} eq $buildinfo->{'targetsysroot'} } @sysroots)[0];
   }
 
   my $kiwimode;
@@ -1603,8 +1603,8 @@ sub dobuild {
   {
     foreach my $sr (@sysroots)
     {
-      $rpmlist = ".build.$sr->{'alias'}";
-      my $dlresult = fetch_and_prepare_rpmlist($buildinfo, $srcdir, $sr->{'arch'}, $sr->{'alias'});
+      $rpmlist = ".build.$sr->{'label'}.rpmlist";
+      my $dlresult = fetch_and_prepare_rpmlist($buildinfo, $srcdir, $sr->{'arch'}, $sr->{'label'});
       push @meta, $dlresult->{'meta'};
       writestr("$buildroot/$rpmlist", undef, join("\n", @{$dlresult->{'rpmlist'}})."\n");
     }
