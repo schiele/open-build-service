@@ -1208,13 +1208,6 @@ sub getbinaries {
   my ($buildinfo, $dir, $srcdir, $sysrootlabel) = @_;
 
 	my $crossbuild = ( $buildinfo->{'crossbuild'} || 0 );
-  my $sysroot;
-	if ($crossbuild)
-	{
-    my @sysroots = @{$buildinfo->{'sysroot'}};
-    $sysroot = (grep {$_->{'label'} eq $sysrootlabel } @sysroots)[0];
-    my $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
-  }
 
   mkdir_p($dir);
   my $kiwimode;
@@ -1232,9 +1225,23 @@ sub getbinaries {
   }
 
   my @bdep = @{$buildinfo->{'bdep'} || []};
-  my %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src' } @bdep;
-  my %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src' } @bdep;
-  @bdep = map {$_->{'name'}} grep {($_->{'repoarch'} || '') ne 'src' } @bdep;
+
+  my (%bdep_noinstall, %bdep_notmeta, $sysroot);
+
+	if ($crossbuild)
+	{
+    my @sysroots = @{$buildinfo->{'sysroot'}};
+    $sysroot = (grep {$_->{'label'} eq $sysrootlabel } @sysroots)[0];
+
+    %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src' && ($_->{'sysroot'} || '') eq $sysrootlabel } @bdep;
+    %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src' &&  ($_->{'sysroot'}|| '') eq $sysrootlabel  } @bdep;
+    @bdep = map {$_->{'name'}} grep {($_->{'repoarch'} || '') ne 'src' && ($_->{'sysroot'}|| '') eq $sysrootlabel  } @bdep;
+print __LINE__, "@bdep: ", Dumper(@bdep), " sysroot: ", Dumper($sysroot);
+  } else {
+    %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src' } @bdep;
+    %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src' } @bdep;
+    @bdep = map {$_->{'name'}} grep {($_->{'repoarch'} || '') ne 'src' } @bdep;
+}
 
   my %done;
   my @todo = @bdep;
@@ -1676,7 +1683,7 @@ sub dobuild {
   push @args, '--dist', "$buildroot/.build.config";
   push @args, '--rpmlist', "$buildroot/.build.rpmlist";
   
-  if ( $crossbuild)
+  if ($crossbuild)
   {
     foreach my $sysroot (@sysroots)
     {
