@@ -1460,12 +1460,11 @@ sub fetch_and_prepare_rpmlist {
 	if ($crossbuild)
 	{
     my @sysroots = @{$buildinfo->{'sysroot'}};
-    $sysroot = (grep {$_->{'label'} eq $sysrootlabel } @sysroots)[0];
     my $hostsysroot = (grep {$_->{'label'} eq $buildinfo->{'hostsysroot'} } @sysroots)[0];
 
-    if ($sysroot->{'label'} ne $hostsysroot->{'label'}) {
-      $build_meta = ".build.$sysroot->{'label'}.meta";
-      $pkgdir = "$buildroot/.pkgs.$sysroot->{'label'}";
+    if ($sysrootlabel ne $hostsysroot->{'label'}) {
+      $build_meta = ".build.$sysrootlabel.meta";
+      $pkgdir = "$buildroot/.pkgs.$sysrootlabel";
     }
   }
   # changed to cleandir so that pkgdir can be a symlink
@@ -1508,14 +1507,14 @@ sub fetch_and_prepare_rpmlist {
       }
     }
     push @rpmlist, "localkiwi $localkiwi/localkiwi.rpm" if $localkiwi && -e "$localkiwi/localkiwi.rpm";
-    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} && $_->{'sysroot'} eq $sysroot->{'label'} } @bdep);
-    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} && $_->{'sysroot'} eq $sysroot->{'label'} } @bdep);
-    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} && $_->{'sysroot'} eq $sysroot->{'label'} } @bdep);
+    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} && $_->{'sysroot'} eq $sysrootlabel } @bdep);
+    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} && $_->{'sysroot'} eq $sysrootlabel } @bdep);
+    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} && $_->{'sysroot'} eq $sysrootlabel } @bdep);
     if (grep {$_->{'cbpreinstall'}} @bdep) {
-      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} && $_->{'sysroot'} eq $sysroot->{'label'} } @bdep);
+      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} && $_->{'sysroot'} eq $sysrootlabel } @bdep);
     }
     if (grep {$_->{'cbinstall'}} @bdep) {
-      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} && $_->{'sysroot'} eq $sysroot->{'label'} } @bdep);
+      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} && $_->{'sysroot'} eq $sysrootlabel } @bdep);
     }
   } else {
     for my $bdep (@bdep) {
@@ -1607,7 +1606,7 @@ sub dobuild {
   {
     foreach my $sr (@sysroots)
     {
-      $rpmlist = ".build.$sr->{'label'}.rpmlist";
+      $rpmlist = ".build.$sr->{'label'}.rpmlist" if ( $sr->{label} ne $hostsysroot->{'label'} );
       my $dlresult = fetch_and_prepare_rpmlist($buildinfo, $srcdir, $sr->{'arch'}, $sr->{'label'});
       push @meta, $dlresult->{'meta'};
       writestr("$buildroot/$rpmlist", undef, join("\n", @{$dlresult->{'rpmlist'}})."\n");
