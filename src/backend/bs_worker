@@ -1459,10 +1459,7 @@ sub fetch_and_prepare_rpmlist {
 
 	if ($crossbuild)
 	{
-    my @sysroots = @{$buildinfo->{'sysroot'}};
-    my $hostsysroot = (grep {$_->{'label'} eq $buildinfo->{'hostsysroot'} } @sysroots)[0];
-
-    if ($sysrootlabel ne $hostsysroot->{'label'}) {
+    if ($sysrootlabel ne $buildinfo->{'hostsysroot'}) {
       $build_meta = ".build.$sysrootlabel.meta";
       $pkgdir = "$buildroot/.pkgs.$sysrootlabel";
     }
