@@ -1695,6 +1695,7 @@ sub dobuild {
   push @args, '--disturl', $disturl;
   push @args, '--linksources' if $localkiwi;
   push @args, '--signdummy' if $kiwimode && (!$localkiwi || ! -e "$localkiwi/localkiwi.rpm") && $buildinfo->{'imagetype'} && $buildinfo->{'imagetype'}->[0] eq 'product' && -e "$statedir/build/signdummy";
+  push @args, '--crossbuild' if $crossbuild;
   push @args, "$srcdir/$buildinfo->{'file'}";
   qsystem(@args);
 
