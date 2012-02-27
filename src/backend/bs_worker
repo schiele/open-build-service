@@ -1492,6 +1492,7 @@ sub fetch_and_prepare_rpmlist {
   # build rpmlist for build script
   my @rpmlist;
   my @bdep = @{$buildinfo->{'bdep'} || []};
+  @bdep = grep {$_->{'sysroot'} eq $sysrootlabel } @bdep if $crossbuild;
 #### FIXME remove duplicate code
   if ($crossbuild)
   {
