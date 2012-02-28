@@ -648,7 +648,6 @@ sub set_building {
   my @cbpdeps = Build::get_cbpreinstalls($bconf); # crossbuild preinstall
   my @cbdeps = Build::get_cbinstalls($bconf);  # crossbuild install
   my @sysroots = Build::get_sysroots($bconf);
-  my $crossbuild = Build::get_crossbuild($bconf);
   my %runscripts = map {$_ => 1} Build::get_runscripts($bconf);
   my %bdeps = map {$_ => 1} @bdeps;
   my %origin_bdeps = map {$_ => 1} @origin_bdeps;
@@ -660,7 +659,7 @@ sub set_building {
 
   my ($hostsysroot, $targetsysroot);
   if ($crossbuild) {
-    $hostsysroot = Build::get_hostsysroot($bconf);
+    $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
     $hostsysroot = (grep {$_->{'label'} eq $hostsysroot } @sysroots)[0];
 
     $targetsysroot = Build::get_targetsysroot($bconf);
@@ -681,7 +680,7 @@ sub set_building {
     $_->{'noinstall'} = 1 if $packtype eq 'kiwi' && $edeps{$_->{'name'}} && !($bdeps{$_->{'name'}} || $vmdeps{$_->{'name'}} || $pdeps{$_->{'name'}});
 
     # assign to hostarch rpmlist if preinstall/vminstall
-    if ($crossbuild && $bconf->{'hostarch'} && ($pdeps{$_->{'name'}} || $vmdeps{$_->{'name'}})) {
+    if ($crossbuild && ($pdeps{$_->{'name'}} || $vmdeps{$_->{'name'}})) {
 
       # if the package has also a regulare require,
       # it needs to get added twice, so it available for target arches as well.
@@ -691,13 +690,17 @@ sub set_building {
     }
   }
 
+
   if ($crossbuild) {
     # Append the target-builddeps to the full bdeps list - so they do not get unified by name
     push @bdeps, @target_bdeps;
 
     foreach my $sr (keys %crossdeps) {
-      for (@{$crossdeps{$sr}}) {
-        push @bdeps, { name => $_, sysroot => $sr };
+      if (grep{ $_->{'label'} eq $sr @sysroots) {
+      {
+        for (@{$crossdeps{$sr}}) {
+          push @bdeps, { name => $_, sysroot => $sr };
+        }
       }
     }
   }
@@ -742,7 +745,6 @@ sub set_building {
     'sysroot' => \@sysroots,
   };
   $binfo->{'crossbuild'} = $crossbuild if ($crossbuild);
-  $binfo->{'hostsysroot'} = $hostsysroot->{'label'} if ($crossbuild);
   $binfo->{'targetsysroot'} = $targetsysroot->{'label'} if ($crossbuild);
 
   $binfo->{'syspath'} = $syspath if $syspath;
