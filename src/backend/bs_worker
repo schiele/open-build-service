@@ -1204,16 +1204,24 @@ sub getbinaries_kiwiproduct {
   return @meta;
 }
 
+sub do_crossbuild {
+  my ($buildinfo) = @_;
+  my $rc = 0;
+  if (@{$buildinfo->{'sysroot'}}) {
+    $rc = 1;
+  }
+  return $rc;
+}
+
 sub getbinaries {
   my ($buildinfo, $dir, $srcdir, $sysrootlabel) = @_;
 
-	my $crossbuild = ( $buildinfo->{'crossbuild'} || 0 );
   my $sysroot;
+  my $crossbuild = do_crossbuild($buildinfo);
 	if ($crossbuild)
 	{
     my @sysroots = @{$buildinfo->{'sysroot'}};
     $sysroot = (grep {$_->{'label'} eq $sysrootlabel } @sysroots)[0];
-    my $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
   }
 
   mkdir_p($dir);
@@ -1253,20 +1261,16 @@ sub getbinaries {
     for my $repo (@{$buildinfo->{'syspath'} || []}) {
       last if !@todo;
       my $server = $repo->{'server'} || $buildinfo->{'reposerver'};
-      my $got;
-      if ($crossbuild)
-      {
-        $got = getbinaries_cache($dir, $server, $sysroot->{'project'}, $sysroot->{'repository'}, $sysroot->{'arch'}, 1, \@todo);
-      } else {
-        $got = getbinaries_cache($dir, $repo->{'server'}, $repo->{'project'}, $repo->{'repository'}, $buildinfo->{'arch'}, 1, \@todo);
-      }
+      my $got = getbinaries_cache($dir, $repo->{'server'}, $repo->{'project'}, $repo->{'repository'}, $buildinfo->{'arch'}, 1, \@todo);
       @todo = grep {!$got->{$_}} @todo;
     }
     die("getbinaries: missing packages: @todo\n") if @todo;
     @todo = grep {$bdep_noinstall{$_} || !$bdep_notmeta{$_}} @bdep;
   }
-
-  for my $repo (@{$buildinfo->{'path'} || []}) {
+  my @packagepathes;
+  push @packapathes, { project => $sysroot->{'project'}, repository => $sysroot->{'repository'}, arch => $sysroot->{'arch'} } if $crossbuild;
+  push @packagepathes, (@{$buildinfo->{'path'}} || [] );
+  for my $repo (@packagepathes) {
     last if !@todo && !$kiwimode;
     my @args;
     my $ddir = $dir;
@@ -1283,13 +1287,7 @@ sub getbinaries {
     }
     my $nometa = 0;
     $nometa = 1 if $kiwimode || $repo->{'project'} ne $projid || $repo->{'repository'} ne $repoid;
-    my $got;
-    if ($crossbuild)
-    {
-      $got = getbinaries_cache($ddir, $repo->{'server'}, $sysroot->{'project'}, $sysroot->{'repository'}, $sysroot->{'arch'}, $nometa, $dlbins);
-    } else {
-      $got = getbinaries_cache($ddir, $repo->{'server'}, $repo->{'project'}, $repo->{'repository'}, $buildinfo->{'arch'}, $nometa, $dlbins);
-    }
+    my $got = getbinaries_cache($ddir, $repo->{'server'}, $repo->{'project'}, $repo->{'repository'}, $buildinfo->{'arch'}, $nometa, $dlbins);
     for (keys %$got) {
       $done{$_} = $got->{$_}->{'name'};
       $meta{$_} = 1 if !$nometa && $got->{$_}->{'meta'};
@@ -1454,12 +1452,16 @@ sub fetch_and_prepare_rpmlist {
   my $build_meta = ".build.meta";
   my $pkgdir = "$buildroot/.pkgs";
 
-	my $crossbuild = ( $buildinfo->{'crossbuild'} || 0 );
+	my $crossbuild = do_crossbuild($buildinfo);
   my $sysroot;
 
 	if ($crossbuild)
 	{
-    if ($sysrootlabel ne $buildinfo->{'hostsysroot'}) {
+    my @sysroots = @{$buildinfo->{'sysroot'}};
+    $sysroot = (grep {$_->{'label'} eq $sysrootlabel } @sysroots)[0];
+    my $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
+
+    if ($sysrootlabel ne $hostsysoot->{'label'}) {
       $build_meta = ".build.$sysrootlabel.meta";
       $pkgdir = "$buildroot/.pkgs.$sysrootlabel";
     }
@@ -1550,7 +1552,7 @@ sub dobuild {
   my $arch = $buildinfo->{'arch'};
   my $hostarch = ($buildinfo->{'hostarch'} || $arch);
   my @sysroots = @{$buildinfo->{'sysroot'} || [] };
-	my $crossbuild = ($buildinfo->{'crossbuild'} || 0);
+	my $crossbuild = do_crossbuild($buildinfo);
 
   my @all_archs;
   push @all_archs, $hostarch, $arch;
@@ -1562,7 +1564,7 @@ sub dobuild {
   my ($hostsysroot, $targetsysroot);
 
   if ($crossbuild) {
-    $hostsysroot = (grep {$_->{'label'} eq $buildinfo->{'hostsysroot'} } @sysroots)[0];# if $do_crossbuild;
+    $hostsysroot = (grep {$_->{'path'} eq '/'} } @sysroots)[0];# if $do_crossbuild;
     $targetsysroot = (grep {$_->{'label'} eq $buildinfo->{'targetsysroot'} } @sysroots)[0];
   }
 
