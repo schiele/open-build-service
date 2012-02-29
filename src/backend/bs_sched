@@ -645,7 +645,7 @@ sub set_building {
 
   my @sysroots = Build::get_sysroots($bconf);
   my $crossbuild = 0;
-  my (@pdeps, @vmdeps, %runscripts);
+  my (@pdeps, @vmdeps, %runscripts, @supports);
   $crossbuild = 1 if @sysroots > 0;
   my ($hostsysroot, $targetsysroot);
 
@@ -659,13 +659,14 @@ sub set_building {
     my $hostsysroot_conf = getconfig($hostsysroot->{'arch'}, ["$hostsysroot->{'project'}/$hostsysroot->{'repository'}"] );
     @pdeps = Build::get_preinstalls($hostsysroot_conf);
     @vmdeps = Build::get_vminstalls($hostsysroot_conf);
+    @supports = Build::get_supports($hostsysroot_conf);
     %runscripts = map {$_ => 1} Build::get_runscripts($hostsysroot_conf);
   } else {
     @pdeps = Build::get_preinstalls($bconf);
     @vmdeps = Build::get_vminstalls($bconf);
     %runscripts = map {$_ => 1} Build::get_runscripts($bconf);
+    # Support: has never been required for non-crossbuild
   }
-
   my @cbpdeps = Build::get_cbpreinstalls($bconf); # crossbuild preinstall
   my @cbdeps = Build::get_cbinstalls($bconf);  # crossbuild install
   my %bdeps = map {$_ => 1} @bdeps;
@@ -676,7 +677,12 @@ sub set_building {
   my %cbdeps = map {$_ => 1} @cbdeps;
   my %edeps = map {$_ => 1} @$edeps;
 
-  @bdeps = unify(@pdeps, @vmdeps, @$edeps, @bdeps, @cbpdeps, @cbdeps);
+  if ($crossbuild)
+  {
+    @bdeps = unify(@$edeps, @bdeps, @cbpdeps, @cbdeps);
+  } else {
+    @bdeps = unify(@pdeps, @vmdeps, @$edeps, @bdeps, @cbpdeps, @cbdeps);
+  }
 
   for (@bdeps) {
     $_ = {'name' => $_};
@@ -708,7 +714,7 @@ sub set_building {
     # preinstall / vminstall / runscripts bdeps
     my @hostdeps;
     @hostdeps = @{$crossdeps{$hostsysroot->{'label'}}};
-    @hostdeps = unify(@pdeps, @vmdeps, @hostdeps);
+    @hostdeps = unify(@pdeps, @vmdeps, @supports, @hostdeps);
     for (@hostdeps) {
       $_ = {'name' => $_};
       $_->{'preinstall'} = 1 if $pdeps{$_->{'name'}};
