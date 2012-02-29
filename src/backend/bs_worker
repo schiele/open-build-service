@@ -1207,7 +1207,7 @@ sub getbinaries_kiwiproduct {
 sub do_crossbuild {
   my ($buildinfo) = @_;
   my $rc = 0;
-  if (@{$buildinfo->{'sysroot'}}) {
+  if (@{$buildinfo->{'sysroot'} || [] }) {
     $rc = 1;
   }
   return $rc;
@@ -1268,8 +1268,8 @@ sub getbinaries {
     @todo = grep {$bdep_noinstall{$_} || !$bdep_notmeta{$_}} @bdep;
   }
   my @packagepathes;
-  push @packagepathes, { project => $sysroot->{'project'}, repository => $sysroot->{'repository'}, arch => $sysroot->{'arch'} } if $crossbuild;
-  push @packagepathes, (@{$buildinfo->{'path'}} || [] );
+  push @packagepathes, { server => $buildinfo->{'reposerver'}, project => $sysroot->{'project'}, repository => $sysroot->{'repository'}, arch => $sysroot->{'arch'} } if $crossbuild;
+  push @packagepathes, (@{$buildinfo->{'path'} || [] });
   for my $repo (@packagepathes) {
     last if !@todo && !$kiwimode;
     my @args;
