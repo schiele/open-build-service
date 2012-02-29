@@ -1287,7 +1287,7 @@ sub getbinaries {
     }
     my $nometa = 0;
     $nometa = 1 if $kiwimode || $repo->{'project'} ne $projid || $repo->{'repository'} ne $repoid;
-    my $got = getbinaries_cache($ddir, $repo->{'server'}, $repo->{'project'}, $repo->{'repository'}, $buildinfo->{'arch'}, $nometa, $dlbins);
+    my $got = getbinaries_cache($ddir, $repo->{'server'}, $repo->{'project'}, $repo->{'repository'}, ( $repo->{'arch'} || $buildinfo->{'arch'}), $nometa, $dlbins);
     for (keys %$got) {
       $done{$_} = $got->{$_}->{'name'};
       $meta{$_} = 1 if !$nometa && $got->{$_}->{'meta'};
@@ -1592,7 +1592,7 @@ sub dobuild {
   my $srcdir    = "$buildroot/.build-srcdir";
   my $oldpkgdir = "$buildroot/.build.oldpackages";
   my @meta;
-  my $rpmlist = ".build.rpmlist";
+  my $rpmlist;
 
   rm_rf($oldpkgdir) if -d $oldpkgdir;
   rm_rf("$buildroot/.build.packages") if -d "$buildroot/.build.packages";
@@ -1605,12 +1605,18 @@ sub dobuild {
   {
     foreach my $sr (@sysroots)
     {
-      $rpmlist = ".build.$sr->{'label'}.rpmlist" if ( $sr->{label} ne $hostsysroot->{'label'} );
+      if ( $sr->{'label'} eq $hostsysroot->{'label'} )
+      {
+        $rpmlist = ".build.rpmlist";
+      } else {
+        $rpmlist = ".build.$sr->{'label'}.rpmlist";
+      }
       my $dlresult = fetch_and_prepare_rpmlist($buildinfo, $srcdir, $sr->{'arch'}, $sr->{'label'});
       push @meta, $dlresult->{'meta'};
       writestr("$buildroot/$rpmlist", undef, join("\n", @{$dlresult->{'rpmlist'}})."\n");
     }
   } else {
+    $rpmlist = ".build.rpmlist";
     my $dlresult = fetch_and_prepare_rpmlist($buildinfo, $srcdir, $arch, undef);
     push @meta, $dlresult->{'meta'};
     writestr("$buildroot/$rpmlist", undef, join("\n", @{$dlresult->{'rpmlist'}})."\n");
