@@ -1622,8 +1622,8 @@ sub dobuild {
     writestr("$buildroot/$rpmlist", undef, join("\n", @{$dlresult->{'rpmlist'}})."\n");
   }
   ###################################
-  unlink("$buildroot/.build_meta");
-  writestr("$buildroot/.build_meta", undef, join("\n", @meta)."\n");
+  unlink("$buildroot/.build.meta");
+  writestr("$buildroot/.build.meta", undef, join("\n", @meta)."\n");
 
   undef $oldpkgdir if ($buildinfo->{'file'} eq '_delta');
 
