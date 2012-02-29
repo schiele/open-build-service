@@ -692,10 +692,23 @@ sub set_building {
   }
 
   if ($crossbuild) {
+    
+    # cross dependencies
+    my @crossdeps;
+    foreach my $sr (keys %crossdeps) {
+      # Skip host sysroot - we handle them later
+      next if $sr eq $hostsysroot->{'label'};
+      for (@{$crossdeps{$sr}}) {
+        push @crossdeps, { name => $_, sysroot => $sr };
+      }
+    }
+    @crossdeps = unify(@crossdeps);
+
     # Append the host- and cross-(build)deps to the full bdeps list - so they do not get unified by name
     # preinstall / vminstall / runscripts bdeps
     my @hostdeps;
-    @hostdeps = unify(@pdeps, @vmdeps);
+    @hostdeps = @{$crossdeps{$hostsysroot->{'label'}}};
+    @hostdeps = unify(@pdeps, @vmdeps, @hostdeps);
     for (@hostdeps) {
       $_ = {'name' => $_};
       $_->{'preinstall'} = 1 if $pdeps{$_->{'name'}};
@@ -703,16 +716,10 @@ sub set_building {
       $_->{'runscripts'} = 1 if $runscripts{$_->{'name'}};
       $_->{'sysroot'} = $hostsysroot->{'label'};
     }
-    push @bdeps, @hostdeps;
-    
-    # cross dependencies
-    foreach my $sr (keys %crossdeps) {
-      if (grep{ $_->{'label'} eq $sr} @sysroots ) {
-        for (@{$crossdeps{$sr}}) {
-          push @bdeps, { name => $_, sysroot => $sr };
-        }
-      }
-    }
+
+    # No need to unify target-deps together with host- and cross-deps
+    push @bdeps, @crossdeps, @hostdeps;
+
   }
 
   if ($info->{'extrasource'}) {
