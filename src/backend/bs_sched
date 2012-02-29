@@ -657,6 +657,8 @@ sub set_building {
   my %cbdeps = map {$_ => 1} @cbdeps;
   my %edeps = map {$_ => 1} @$edeps;
 
+  my $crossbuild = 0;
+  $crossbuild = 1 if @sysroots > 0;
   my ($hostsysroot, $targetsysroot);
   if ($crossbuild) {
     $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
@@ -696,8 +698,7 @@ sub set_building {
     push @bdeps, @target_bdeps;
 
     foreach my $sr (keys %crossdeps) {
-      if (grep{ $_->{'label'} eq $sr @sysroots) {
-      {
+      if (grep{ $_->{'label'} eq $sr} @sysroots ) {
         for (@{$crossdeps{$sr}}) {
           push @bdeps, { name => $_, sysroot => $sr };
         }
