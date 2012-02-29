@@ -643,11 +643,29 @@ sub set_building {
   $reason->{'time'} = $now;
   writexml("$reporoot/$prp/$myarch/$packid/.reason", "$reporoot/$prp/$myarch/$packid/reason", $reason, $BSXML::buildreason);
 
-  my @pdeps = Build::get_preinstalls($bconf);
-  my @vmdeps = Build::get_vminstalls($bconf);
+  my @sysroots = Build::get_sysroots($bconf);
+  my $crossbuild = 0;
+  my (@pdeps, @vmdeps);
+  $crossbuild = 1 if @sysroots > 0;
+  my ($hostsysroot, $targetsysroot);
+
+  if ($crossbuild) {
+    $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
+
+    $targetsysroot = Build::get_targetsysroot($bconf);
+    $targetsysroot = (grep {$_->{'label'} eq $targetsysroot } @sysroots)[0];
+
+    #load prjconf of hostsysroot
+    my $hostsysroot_conf = getconfig($hostsysroot->{'arch'}, ["$hostsysroot->{'project'}/$hostsysroot->{'repository'}"] );
+    @pdeps = Build::get_preinstalls($hostsysroot_conf);
+    @vmdeps = Build::get_vminstalls($hostsysroot_conf);
+  } else {
+    @pdeps = Build::get_preinstalls($bconf);
+    @vmdeps = Build::get_vminstalls($bconf);
+  }
+
   my @cbpdeps = Build::get_cbpreinstalls($bconf); # crossbuild preinstall
   my @cbdeps = Build::get_cbinstalls($bconf);  # crossbuild install
-  my @sysroots = Build::get_sysroots($bconf);
   my %runscripts = map {$_ => 1} Build::get_runscripts($bconf);
   my %bdeps = map {$_ => 1} @bdeps;
   my %origin_bdeps = map {$_ => 1} @origin_bdeps;
@@ -656,17 +674,6 @@ sub set_building {
   my %cbpdeps = map {$_ => 1} @cbpdeps;
   my %cbdeps = map {$_ => 1} @cbdeps;
   my %edeps = map {$_ => 1} @$edeps;
-
-  my $crossbuild = 0;
-  $crossbuild = 1 if @sysroots > 0;
-  my ($hostsysroot, $targetsysroot);
-  if ($crossbuild) {
-    $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
-    $hostsysroot = (grep {$_->{'label'} eq $hostsysroot } @sysroots)[0];
-
-    $targetsysroot = Build::get_targetsysroot($bconf);
-    $targetsysroot = (grep {$_->{'label'} eq $targetsysroot } @sysroots)[0];
-  }
 
   my @target_bdeps;
   @bdeps = unify(@pdeps, @vmdeps, @$edeps, @bdeps, @cbpdeps, @cbdeps);
@@ -689,6 +696,8 @@ sub set_building {
       push @target_bdeps, {'name' => $_->{'name'}, } if ($origin_bdeps{$_->{'name'}} || $edeps{$_->{'name'}});
 
       $_->{'sysroot'} = $hostsysroot->{'label'}; 
+    } else {
+      $_->{'sysroot'} = $targetsysroot->{'label'};
     }
   }
 
@@ -711,15 +720,6 @@ sub set_building {
       'name' => $_->{'file'}, 'version' => '', 'repoarch' => 'src',
       'project' => $_->{'project'}, 'package' => $_->{'package'}, 'srcmd5' => $_->{'srcmd5'},
     }} @{$info->{'extrasource'}};
-  }
-
-  # set sysroot to targetsysroot's label where no sysrot is set
-  if ($crossbuild) {
-    for (@bdeps) {
-      if ( not defined $_->{'sysroot'} ) {
-        $_->{'sysroot'} = $targetsysroot->{'label'}
-      }
-    }
   }
 
   my $vmd5 = $pdata->{'verifymd5'} || $pdata->{'srcmd5'};
