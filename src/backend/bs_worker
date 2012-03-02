@@ -1218,8 +1218,8 @@ sub getbinaries {
 
   my $sysroot;
   my $crossbuild = do_crossbuild($buildinfo);
-	if ($crossbuild)
-	{
+  if ($crossbuild)
+  {
     my @sysroots = @{$buildinfo->{'sysroot'}};
     $sysroot = (grep {$_->{'label'} eq $sysrootlabel } @sysroots)[0];
   }
@@ -1249,7 +1249,12 @@ sub getbinaries {
 
   my %done;
   my @todo = @bdep;
-  die("no binaries needed for this package?\n") unless @todo;
+  if ( !$crossbuild && ( $sysrootlabel || '' ) eq ($buildinfo->{'hostsysroot'}|| '') )
+  {
+    die("no binaries needed for this package?\n") unless @todo;
+  } else {
+    print "no binaries needed in sysroot $sysrootlabel, that's ok..\n";
+  }
   my @meta;
   my %meta;
   my $projid = $buildinfo->{'project'};
