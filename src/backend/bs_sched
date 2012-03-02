@@ -647,7 +647,7 @@ sub set_building {
   my $crossbuild = 0;
   my (@pdeps, @vmdeps, %runscripts, @supports);
   $crossbuild = 1 if @sysroots > 0;
-  my ($hostsysroot, $targetsysroot);
+  my ($hostsysroot, $targetsysroot, @hostdeps);
 
   if ($crossbuild) {
     $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
@@ -659,8 +659,10 @@ sub set_building {
     my $hostsysroot_conf = getconfig($hostsysroot->{'arch'}, ["$hostsysroot->{'project'}/$hostsysroot->{'repository'}"] );
     @pdeps = Build::get_preinstalls($hostsysroot_conf);
     @vmdeps = Build::get_vminstalls($hostsysroot_conf);
+    @hostdeps = Build::get_required($hostsysroot_conf);
     @supports = Build::get_supports($hostsysroot_conf);
     %runscripts = map {$_ => 1} Build::get_runscripts($hostsysroot_conf);
+    
   } else {
     @pdeps = Build::get_preinstalls($bconf);
     @vmdeps = Build::get_vminstalls($bconf);
@@ -712,8 +714,8 @@ sub set_building {
 
     # Append the host- and cross-(build)deps to the full bdeps list - so they do not get unified by name
     # preinstall / vminstall / runscripts bdeps
-    my @hostdeps;
-    @hostdeps = @{$crossdeps{$hostsysroot->{'label'}}};
+
+    push @hostdeps, @{$crossdeps{$hostsysroot->{'label'}}};
     @hostdeps = unify(@pdeps, @vmdeps, @supports, @hostdeps);
     for (@hostdeps) {
       $_ = {'name' => $_};
