@@ -648,15 +648,23 @@ sub set_building {
   my (@pdeps, @vmdeps, %runscripts, @supports);
   $crossbuild = 1 if @sysroots > 0;
   my ($hostsysroot, $targetsysroot, @hostdeps);
-
   if ($crossbuild) {
+    for my $sysroot (@sysroots) {
+      my $repos = $projpacks->{$sysroot->{'pathes'}->[0]->{'project'}}->{'repository'} || [];
+      for my $repo (@$repos) {
+        next unless grep {$_ eq $sysroot->{'arch'}} @{$repo->{'arch'} || []};
+        my $repoid = $repo->{'name'};
+        @{$sysroot->{'pathes'}} = expandsearchpath($sysroot->{'pathes'}->[0]->{'project'},$repo, $sysroot->{'arch'});
+        print "sysrootpathes: ", Dumper($sysroot->{'pathes'});
+        }
+    }
     $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
 
     $targetsysroot = Build::get_targetsysroot($bconf);
     $targetsysroot = (grep {$_->{'label'} eq $targetsysroot } @sysroots)[0];
 
     #load prjconf of hostsysroot
-    my $hostsysroot_conf = getconfig($hostsysroot->{'arch'}, ["$hostsysroot->{'project'}/$hostsysroot->{'repository'}"] );
+    my $hostsysroot_conf = getconfig($hostsysroot->{'arch'}, ["$hostsysroot->{'pathes'}->[0]->{'project'}/$hostsysroot->{'pathes'}->[0]->{'repository'}"] );
     @pdeps = Build::get_preinstalls($hostsysroot_conf);
     @vmdeps = Build::get_vminstalls($hostsysroot_conf);
     @hostdeps = Build::get_required($hostsysroot_conf);
@@ -2206,10 +2214,11 @@ sub calc_projpacks_linked {
 #
 # input:  $projid     - the project the repository belongs to
 #         $repository - the repository data
+#         $repoarch   - the repositories architecture
 # output: expanded path array
 #
 sub expandsearchpath {
-  my ($projid, $repository) = @_;
+  my ($projid, $repository, $repoarch) = @_;
   my %done;
   my @ret;
   my @path = @{$repository->{'path'} || []};
@@ -2221,7 +2230,7 @@ sub expandsearchpath {
     my $prp = "$t->{'project'}/$t->{'repository'}";
     push @ret, $t unless $done{$prp};
     $done{$prp} = 1;
-    addwatchremote('repository', $t->{'project'}, "/$t->{'repository'}/$myarch") unless $t->{'repository'} eq '_unavailable';
+    addwatchremote('repository', $t->{'project'}, "/$t->{'repository'}/$repoarch") unless $t->{'repository'} eq '_unavailable';
     if (!@path) {
       last if $done{"/$prp"};
       my ($pid, $rid) = ($t->{'project'}, $t->{'repository'});
@@ -2292,7 +2301,7 @@ sub calc_prps {
       my $repoid = $repo->{'name'};
       my $prp = "$projid/$repoid";
       push @prps, $prp;
-      my @searchpath = expandsearchpath($projid, $repo);
+      my @searchpath = expandsearchpath($projid, $repo, $myarch);
       # map searchpath to internal prp representation
       my @sp = map {"$_->{'project'}/$_->{'repository'}"} @searchpath;
       $prpsearchpath{$prp} = \@sp;
