@@ -457,6 +457,11 @@ our $buildinfo = [
   'repository',	
   'arch', 
   'path',
+     [[ 'pathes' =>
+	    'project',
+	    'repository',
+	    'server',
+     ]],
      ]],                # used to set additional sysroots to get set up
 	'error',
 	'srcmd5',
