@@ -1249,11 +1249,11 @@ sub getbinaries {
 
   my %done;
   my @todo = @bdep;
-  if ( !$crossbuild && ( $sysrootlabel || '' ) eq ($buildinfo->{'hostsysroot'}|| '') )
+  if ( !$crossbuild  || ( $sysrootlabel || '' ) eq ($buildinfo->{'hostsysroot'}|| '') )
   {
     die("no binaries needed for this package?\n") unless @todo;
   } else {
-    print "no binaries needed in sysroot $sysrootlabel, that's ok..\n";
+    print "no binaries needed in sysroot $sysrootlabel, that's ok..\n" unless @todo;
   }
   my @meta;
   my %meta;
@@ -1272,11 +1272,17 @@ sub getbinaries {
     die("getbinaries: missing packages: @todo\n") if @todo;
     @todo = grep {$bdep_noinstall{$_} || !$bdep_notmeta{$_}} @bdep;
   }
-  my @packagepathes;
-  push @packagepathes, { server => $buildinfo->{'reposerver'}, project => $sysroot->{'project'}, repository => $sysroot->{'repository'}, arch => $sysroot->{'arch'} } if $crossbuild;
-  push @packagepathes, (@{$buildinfo->{'path'} || [] });
-  for my $repo (@packagepathes) {
+  my (@package_pathes, $package_arch);
+  if ($crossbuild ) {
+    @package_pathes = (@{$sysroot->{'pathes'} || [] });
+    $package_arch = $sysroot->{'arch'};
+  } else {
+    @package_pathes = (@{$buildinfo->{'path'} || [] });
+    $package_arch = $buildinfo->{'arch'};
+  }
+  for my $repo (@package_pathes) {
     last if !@todo && !$kiwimode;
+print "trying path for ", $sysroot->{'label'}, ": ", Dumper($repo), "\n";
     my @args;
     my $ddir = $dir;
     my $dlbins;
@@ -1292,7 +1298,7 @@ sub getbinaries {
     }
     my $nometa = 0;
     $nometa = 1 if $kiwimode || $repo->{'project'} ne $projid || $repo->{'repository'} ne $repoid;
-    my $got = getbinaries_cache($ddir, $repo->{'server'}, $repo->{'project'}, $repo->{'repository'}, ( $repo->{'arch'} || $buildinfo->{'arch'}), $nometa, $dlbins);
+    my $got = getbinaries_cache($ddir, ( $repo->{'server'} || $buildinfo->{'reposerver'} ), $repo->{'project'}, $repo->{'repository'}, $package_arch, $nometa, $dlbins);
     for (keys %$got) {
       $done{$_} = $got->{$_}->{'name'};
       $meta{$_} = 1 if !$nometa && $got->{$_}->{'meta'};
