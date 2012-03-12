@@ -1282,7 +1282,6 @@ sub getbinaries {
   }
   for my $repo (@package_pathes) {
     last if !@todo && !$kiwimode;
-print "trying path for ", $sysroot->{'label'}, ": ", Dumper($repo), "\n";
     my @args;
     my $ddir = $dir;
     my $dlbins;
