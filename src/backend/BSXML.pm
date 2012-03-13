@@ -457,7 +457,7 @@ our $buildinfo = [
   'repository',	
   'arch', 
   'path',
-     [[ 'pathes' =>
+     [[ 'paths' =>
 	    'project',
 	    'repository',
 	    'server',

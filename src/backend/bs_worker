@@ -1272,15 +1272,15 @@ sub getbinaries {
     die("getbinaries: missing packages: @todo\n") if @todo;
     @todo = grep {$bdep_noinstall{$_} || !$bdep_notmeta{$_}} @bdep;
   }
-  my (@package_pathes, $package_arch);
+  my (@package_paths, $package_arch);
   if ($crossbuild ) {
-    @package_pathes = (@{$sysroot->{'pathes'} || [] });
+    @package_paths = (@{$sysroot->{'paths'} || [] });
     $package_arch = $sysroot->{'arch'};
   } else {
-    @package_pathes = (@{$buildinfo->{'path'} || [] });
+    @package_paths = (@{$buildinfo->{'path'} || [] });
     $package_arch = $buildinfo->{'arch'};
   }
-  for my $repo (@package_pathes) {
+  for my $repo (@package_paths) {
     last if !@todo && !$kiwimode;
     my @args;
     my $ddir = $dir;
