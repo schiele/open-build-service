@@ -1275,6 +1275,7 @@ sub getbinaries {
   my (@package_paths, $package_arch);
   if ($crossbuild ) {
     @package_paths = (@{$sysroot->{'paths'} || [] });
+    unshift @package_paths, @{$buildinfo->{'path'} || [] } if ($sysroot->{'label'} eq $buildinfo->{'targetsysroot'});
     $package_arch = $sysroot->{'arch'};
   } else {
     @package_paths = (@{$buildinfo->{'path'} || [] });
