@@ -655,7 +655,6 @@ sub set_building {
         next unless grep {$_ eq $sysroot->{'arch'}} @{$repo->{'arch'} || []};
         my $repoid = $repo->{'name'};
         @{$sysroot->{'pathes'}} = expandsearchpath($sysroot->{'pathes'}->[0]->{'project'},$repo, $sysroot->{'arch'});
-        print "sysrootpathes: ", Dumper($sysroot->{'pathes'});
         }
     }
     $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
@@ -663,14 +662,21 @@ sub set_building {
     $targetsysroot = Build::get_targetsysroot($bconf);
     $targetsysroot = (grep {$_->{'label'} eq $targetsysroot } @sysroots)[0];
 
+    # combine searchpathes for getting combined prj conf
+    my @host_repos;
+    for my $repo (@{$hostsysroot->{'pathes'}}) {
+      push @host_repos, "$repo->{'project'}/$repo->{'repository'}";
+    }
+
     #load prjconf of hostsysroot
-    my $hostsysroot_conf = getconfig($hostsysroot->{'arch'}, ["$hostsysroot->{'pathes'}->[0]->{'project'}/$hostsysroot->{'pathes'}->[0]->{'repository'}"] );
+    my $hostsysroot_conf = getconfig($hostsysroot->{'arch'}, \@host_repos );
+
     @pdeps = Build::get_preinstalls($hostsysroot_conf);
     @vmdeps = Build::get_vminstalls($hostsysroot_conf);
     @hostdeps = Build::get_required($hostsysroot_conf);
     @supports = Build::get_supports($hostsysroot_conf);
     %runscripts = map {$_ => 1} Build::get_runscripts($hostsysroot_conf);
-    
+
   } else {
     @pdeps = Build::get_preinstalls($bconf);
     @vmdeps = Build::get_vminstalls($bconf);
