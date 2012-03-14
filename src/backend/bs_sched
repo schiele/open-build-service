@@ -653,6 +653,7 @@ sub set_building {
       my $repos = $projpacks->{$sysroot->{'paths'}->[0]->{'project'}}->{'repository'} || [];
       for my $repo (@$repos) {
         next unless grep {$_ eq $sysroot->{'arch'}} @{$repo->{'arch'} || []};
+        next unless grep {$_->{'repository'} eq $repo->{'name'}} @{$sysroot->{'paths'} || []};
         my $repoid = $repo->{'name'};
         @{$sysroot->{'paths'}} = expandsearchpath($sysroot->{'paths'}->[0]->{'project'},$repo, $sysroot->{'arch'});
         }
