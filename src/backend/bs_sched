@@ -676,7 +676,7 @@ sub set_building {
     @vmdeps = Build::get_vminstalls($hostsysroot_conf);
     @hostdeps = Build::get_required($hostsysroot_conf);
     @supports = Build::get_supports($hostsysroot_conf);
-    my @nosupports = Build::get_nosupports($bconf); 
+    my @nosupports = Build::get_nosupports($bconf, $hostsysroot->{'label'}); 
     my %nosupports = map { $_=> $_} @nosupports;
     @supports = grep{!$nosupports{'!'.$_} } @supports; 
     %runscripts = map {$_ => 1} Build::get_runscripts($hostsysroot_conf);
