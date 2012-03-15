@@ -721,11 +721,13 @@ sub set_building {
     
     # cross dependencies
     my @crossdeps;
-    foreach my $sr (keys %crossdeps) {
+    foreach my $sr_label (keys %crossdeps) {
       # Skip host sysroot - we handle them later
-      next if $sr eq $hostsysroot->{'label'};
-      for (@{$crossdeps{$sr}}) {
-        push @crossdeps, { name => $_, sysroot => $sr };
+      next if $sr_label eq $hostsysroot->{'label'};
+      # skip not configured sysrootes
+      next unless grep {$_->{'label'} eq $sr_label} @sysroots;
+      for (@{$crossdeps{$sr_label}}) {
+        push @crossdeps, { name => $_, sysroot => $sr_label };
       }
     }
     @crossdeps = unify(@crossdeps);
