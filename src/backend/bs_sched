@@ -49,6 +49,7 @@ use BSDB;
 use Meta;
 use BSSolv;
 use BSCando;
+use BSStdServer;
 
 use strict;
 
@@ -357,9 +358,14 @@ sub enabled {
 
 # this is basically getconfig from the source server
 # we do not need any macros, just the config
-sub getconfig {
+sub getconfig_raw {
   my ($arch, $path) = @_;
   my $config = '';
+  if ($arch ne $myarch) {
+    my ($p, $r) = split('/', $path->[0]);
+    my @configpath = map {"path=$_'}"} @{$path || []};
+    my $c = BSRPC::rpc("$BSConfig::schedserver->{$arch}/getconfig", undef, "project=$p", "repository=$r", @configpath);
+  }
   if (@$path) {
     my ($p, $r) = split('/', $path->[0], 2);
     $config .= "%define _project $p\n";
@@ -379,6 +385,13 @@ sub getconfig {
     $c = defined($1) ? $1 : '' if $c =~ /^(.*\n)?\s*macros:[^\n]*\n/si;
     $config .= $c;
   }
+  return $config;
+}
+
+sub getconfig {
+  my ($arch, $path) = @_;
+
+  my $config = getconfig_raw($arch, $path);
   # it's an error if we have no config at all
   return undef unless $config ne '';
   # now we got the combined config, parse it
@@ -386,6 +399,18 @@ sub getconfig {
   my $c = Build::read_config($arch, \@c);
   $c->{'repotype'} = [ 'rpm-md' ] unless @{$c->{'repotype'}};
   return $c;
+}
+
+sub getconfigremote {
+  my ($cgi, $projid, $repoid) = @_;
+  my @path;
+  if ($cgi->{'path'}) {
+    @path = @{$cgi->{'path'}};
+  } else {
+    @path = [];
+  }
+  my $config = getconfig_raw($myarch, \@path);
+  return ($config,'Content-Type: text/plain') ;
 }
 
 
@@ -664,10 +689,7 @@ sub set_building {
     $targetsysroot = (grep {$_->{'label'} eq $targetsysroot } @sysroots)[0];
 
     # combine searchpaths for getting combined prj conf
-    my @host_repos;
-    for my $repo (@{$hostsysroot->{'paths'}}) {
-      push @host_repos, "$repo->{'project'}/$repo->{'repository'}";
-    }
+    my @host_repos = map { "$_->{'project'}/$_->{'repository'}"  } @{$hostsysroot->{'paths'}};
 
     #load prjconf of hostsysroot
     my $hostsysroot_conf = getconfig($hostsysroot->{'arch'}, \@host_repos );
@@ -722,10 +744,19 @@ sub set_building {
     # cross dependencies
     my @crossdeps;
     foreach my $sr_label (keys %crossdeps) {
-      # Skip host sysroot - we handle them later
-      next if $sr_label eq $hostsysroot->{'label'};
       # skip not configured sysrootes
       next unless grep {$_->{'label'} eq $sr_label} @sysroots;
+
+      my $sr = (grep {$_->{'label'} eq $sr_label } @sysroots)[0];
+      my @sr_repos = map { "$_->{'project'}/$_->{'repository'}"  } @{$sr->{'paths'}};
+
+      my $sr_config = getconfig($sr->{'arch'}, \@sr_repos );
+      my ($eok, @ecrossdeps);
+      ( $eok, @ecrossdeps ) = Build::expand($sr_config, @{$crossdeps{$sr_label}});
+      push @{$crossdeps{$sr_label}}, @ecrossdeps;
+
+      # Skip host sysroot - we handle them later
+      next if $sr_label eq $hostsysroot->{'label'};
       for (@{$crossdeps{$sr_label}}) {
         push @crossdeps, { name => $_, sysroot => $sr_label };
       }
@@ -4702,6 +4733,39 @@ my $gotevent = 1;
 $gotevent = 0 if $testprojid;
 
 my $lastschedinfo = 0;
+
+# start rpc server for inter scheduler communication
+####################################################################
+sub hello {
+  my ($cgi) = @_;
+  return "<hello name=\"Scheduler $myarch Server\"/>\n";
+}
+
+if ($BSConfig::schedserver->{$myarch} || 0) {
+  my $dispatches = [
+    '/' => \&hello,
+    '!rw :' => undef,
+    '!- GET:' => undef,
+    '!- HEAD:' => undef,
+    '/getconfig $project $repository path:prp*' => \&getconfigremote,
+  ];
+  my $port = (split(':',$BSConfig::schedserver->{$myarch}))[2];
+  my $conf = {
+    'port' => $port,
+    'dispatches' => $dispatches,
+    'setkeepalive' => 1,
+    'maxchild' => 20,
+  };
+
+  my $pid = fork();
+  if ($pid) {
+    #parent do nothing
+  } elsif ($pid == 0) {
+    # in thread starten
+    BSStdServer::server('bs_sched '.$myarch, \@ARGV, $conf);
+  }
+}
+####################################################################
 
 while(1) {
   if (%changed_low || %changed_med || %changed_high) {

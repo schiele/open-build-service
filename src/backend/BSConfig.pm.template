@@ -53,6 +53,12 @@ our $servicedir = "/usr/lib/obs/service/";
 #our $servicetempdir = "/var/temp/";
 #our $serviceroot = "/opt/obs/MyServiceSystem";
 
+#our $schedserver = {
+#    'x86_64' => "http://$ostname:5452",
+#    'i586' => "http://$hostname:5552",
+#    'armv7l' => "http://$hostname:5652",
+#};
+
 #our $gpg_standard_key = "/etc/obs-default-gpg.asc";
 # public download service:
 our $repodownload = "http://$hostname/repositories";
