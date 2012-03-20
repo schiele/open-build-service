@@ -49,6 +49,7 @@ use BSDB;
 use Meta;
 use BSSolv;
 use BSCando;
+use BSStdServer;
 
 use strict;
 
@@ -4702,6 +4703,44 @@ my $gotevent = 1;
 $gotevent = 0 if $testprojid;
 
 my $lastschedinfo = 0;
+
+# start rpc server for inter scheduler communication
+
+####################################################################
+
+sub hello {
+  my ($cgi) = @_;
+  return "<hello name=\"Scheduler $myarch Server\"/>\n";
+}
+
+if ($BSConfig::schedserver->{$myarch} || 0) {
+  my $dispatches = [
+    '/' => \&hello,
+    '!rw :' => undef,
+    '!- GET:' => undef,
+    '!- HEAD:' => undef,
+  ];
+  my $port = (split(':',$BSConfig::schedserver->{$myarch}))[2];
+  my $conf = {
+    'port' => $port,
+    'dispatches' => $dispatches,
+    'setkeepalive' => 1,
+    'maxchild' => 20,
+  };
+
+  my $pid = fork();
+  if ($pid) {
+    #parent do nothing
+  } elsif ($pid == 0) {
+    # in thread starten
+    BSStdServer::server('bs_sched $myarch', \@ARGV, $conf);
+  }
+}
+
+####################################################################
+
+
+
 
 while(1) {
   if (%changed_low || %changed_med || %changed_high) {
