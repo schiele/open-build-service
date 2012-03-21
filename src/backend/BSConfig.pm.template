@@ -70,13 +70,6 @@ our $repodownload = "http://$hostname/repositories";
 # But only one source server is possible yet.
 our @reposervers = ("http://$hostname:5252");
 
-our $schedserver = {
-    'x86_64' => "http://$ostname:5452",
-    'i586' => "http://$hostname:5552",
-    'armv7l' => "http://$hostname:5652",
-};
-
-+
 # proxy support:
 #our $proxy = "http(s)://<user:pass>\@<host>:<port>";
 
