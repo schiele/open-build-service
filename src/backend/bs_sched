@@ -775,14 +775,11 @@ sub set_building {
     # Append the host- and cross-(build)deps to the full bdeps list - so they do not get unified by name
     # preinstall / vminstall / runscripts bdeps
 
-    push @hostdeps, @{$crossdeps{$hostsysroot->{'label'}}};
-<<<<<<< HEAD
-=======
+    push @hostdeps, @{$crossdeps{$hostsysroot->{'label'}} || []};
     my ($eok, $hostdeps) = get_cross_deps($hostsysroot->{'arch'}, $hostsysroot->{'bconf'},$hostsysroot->{'paths'}->[0]->{'project'}, $hostsysroot->{'paths'}->[0]->{'repository'}, $hostsysroot->{'paths'}, \@hostdeps);
  
 #    my ($eok, $string) = get_cross_deps($hostsysroot->{'arch'}, $hostsysroot->{'bconf'}, $hostsysroot->{'paths'}->[0]->{'project'}, $hostsysroot->{'paths'}->[0]->{'repository'}, $hostsysroot->{'paths'}, \@hostdeps);
     push @hostdeps, @{$hostdeps};
->>>>>>> scheduler is now able to expand packages for differnt archs then its own
     @hostdeps = unify(@pdeps, @vmdeps, @supports, @hostdeps);
     for (@hostdeps) {
       $_ = {'name' => $_};
