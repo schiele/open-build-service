@@ -31,6 +31,8 @@ typedef struct _Expander {
   Map preferneg;
   Map prefernegx;
 
+  Map crosssubst;
+
   Queue conflictsq;
   Map conflicts;
 
@@ -217,6 +219,8 @@ expander_installed(Expander *xp, Id p, Map *installed, Map *conflicts, Queue *ou
 	    continue;
 	  id = id2name(pool, req);
 	  if (MAPTST(&xp->ignored, id))
+	    continue;
+	  if (MAPTST(&xp->crosssubst, id))
 	    continue;
 	  if (MAPTST(&xp->ignoredx, id))
 	    {
@@ -1963,6 +1967,33 @@ new(char *packname = "BSSolv::expander", BSSolv::pool pool, HV *config)
 		    MAPSET(&xp->conflicts, id2);
 		  }
 	      }
+	    svp = hv_fetch(config, "crosssubst", 10, 0);
+	    sv = svp ? *svp : 0;
+
+	    if (sv && SvROK(sv) && SvTYPE(SvRV(sv)) == SVt_PVAV)
+	      {
+		AV *av = (AV *)SvRV(sv);
+
+		for (i = 0; i <= av_len(av); i++)
+		  {
+		    char *p;
+
+		    svp = av_fetch(av, i, 0);
+		    if (!svp)
+		      continue;
+		    sv = *svp;
+		    str = SvPV_nolen(sv);
+		    if (!str)
+		      continue;
+
+		    id = str2id(pool, str, 1);
+
+
+		    MAPEXP(&xp->crosssubst, id);
+		    MAPSET(&xp->crosssubst, id);
+		  }
+
+      	      }
 	    /* XXX: this modifies the pool, which is a bit unclean! */
 	    svp = hv_fetch(config, "fileprovides", 12, 0);
 	    sv = svp ? *svp : 0;
@@ -2074,6 +2105,7 @@ expand(BSSolv::expander xp, ...)
 		  }
 	      }
 
+	    MAPEXP(&xp->crosssubst, pool->ss.nstrings);
 	    MAPEXP(&xp->ignored, pool->ss.nstrings);
 	    MAPEXP(&xp->ignoredx, pool->ss.nstrings);
 	    MAPEXP(&xp->preferpos, pool->ss.nstrings);
@@ -2154,6 +2186,7 @@ expand(BSSolv::expander xp, ...)
 void
 DESTROY(BSSolv::expander xp)
     CODE:
+	map_free(&xp->crosssubst);
 	map_free(&xp->ignored);
 	map_free(&xp->ignoredx);
 	queue_free(&xp->preferposq);
