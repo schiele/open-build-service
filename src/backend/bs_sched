@@ -852,6 +852,19 @@ sub set_building {
   $debuginfo = enabled($repoid, $pdata->{'debuginfo'}, $debuginfo);
   $binfo->{'debuginfo'} = 1 if $debuginfo;
 
+  # FIXME: find better position ... so it fails immeditally - not only if a build gets triggered
+  # Crossbuild Sanity checks
+  # TODO:
+  #  - sysroot does not contain all arguments
+  #  - no sysroot with /
+  #  - hostsysroot is not set
+  if ($crossbuild) {
+     if (!defined $targetsysroot->{'label'}) {
+        print "        bad crossbuild configuration: TargetSysroot not set\n";
+        return (undef, "bad crossbuild configuration: TargetSysroot not set");
+     }
+  }
+
   writexml("$myjobsdir/.$job", "$myjobsdir/$job", $binfo, $BSXML::buildinfo);
   add_crossmarker($bconf, $job) if $bconf->{'hostarch'};
   # all done. the dispatcher will now pick up the job and send it
