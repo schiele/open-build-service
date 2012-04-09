@@ -783,9 +783,9 @@ sub set_building {
                                           $hostsysroot->{'paths'}, \@hostdeps);
     
     if (!$hosteok) {
-      if ($hosteok =~/^broken/) {
-        print "        $hosteok\n";
-        return ('broken', $hosteok);
+      if (grep { $_ =~/^broken/} @{$hostdeps}) {
+        print "        @{$hostdeps}\n";
+        return (undef, @{$hostdeps});
       }
       print "        unresolvables in hostsysroot:\n";
       print "          $_\n" for @{$hostdeps};
