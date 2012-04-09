@@ -450,13 +450,13 @@ our $buildinfo = [
 	'job',
 	'arch',
 	'hostarch',     # for cross build
-  'targetsysroot',
+	'targetsysroot',
      [[ 'sysroot' => 
-  'label',
-  'project',
-  'repository',	
-  'arch', 
-  'path',
+	'label',
+	'project',
+	'repository',	
+	'arch', 
+	'path',
      [[ 'paths' =>
 	    'project',
 	    'repository',
