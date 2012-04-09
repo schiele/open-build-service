@@ -403,11 +403,11 @@ sub get_cross_deps {
     my %oldrepodatas = %repodatas;
     %repodatas = ();
     if (!checkprpaccess($aprp, $prp)) {
-      return ('broken', "cross repository $aprp is unavailable");
+      return (undef, "broken: cross repository $aprp is unavailable");
     }
     my $r = addrepo($pool, $aprp, $arch);
     if (!$r) {
-      return ('broken', "cross repository $aprp is unavailable");
+      return (undef, "broken: cross repository $aprp is unavailable");
     }
     %repodatas = %oldrepodatas;
   }
@@ -783,6 +783,10 @@ sub set_building {
                                           $hostsysroot->{'paths'}, \@hostdeps);
     
     if (!$hosteok) {
+      if ($hosteok =~/^broken/) {
+        print "        $hosteok\n";
+        return ('broken', $hosteok);
+      }
       print "        unresolvables in hostsysroot:\n";
       print "          $_\n" for @{$hostdeps};
       return (undef, "unresolvable in hostsysroot: ".join(', ', @{$hostdeps}));
