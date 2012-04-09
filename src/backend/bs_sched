@@ -781,13 +781,14 @@ sub set_building {
                                           $hostsysroot->{'paths'}->[0]->{'project'},
                                           $hostsysroot->{'paths'}->[0]->{'repository'},
                                           $hostsysroot->{'paths'}, \@hostdeps);
+    
     if (!$hosteok) {
       print "        unresolvables in hostsysroot:\n";
-      print "          $_\n" for @bdeps;
-      return (undef, "unresolvable in hostsysroot: ".join(', ', @bdeps));
+      print "          $_\n" for @{$hostdeps};
+      return (undef, "unresolvable in hostsysroot: ".join(', ', @{$hostdeps}));
     }
  
-    push @hostdeps, @{$hostdeps};
+    @hostdeps = @{$hostdeps};
     @hostdeps = unify(@pdeps, @vmdeps, @supports, @hostdeps);
     for (@hostdeps) {
       $_ = {'name' => $_};
