@@ -789,7 +789,7 @@ sub set_building {
       }
       print "        unresolvables in hostsysroot:\n";
       print "          $_\n" for @{$hostdeps};
-      return (undef, "unresolvable in hostsysroot: ".join(', ', @{$hostdeps}));
+      return (undef, "unresolvable: in hostsysroot: ".join(', ', @{$hostdeps}));
     }
  
     @hostdeps = @{$hostdeps};
