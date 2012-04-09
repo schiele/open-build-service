@@ -403,11 +403,11 @@ sub get_cross_deps {
     my %oldrepodatas = %repodatas;
     %repodatas = ();
     if (!checkprpaccess($aprp, $prp)) {
-      return ('broken', "repository $aprp is unavailable");
+      return ('broken', "cross repository $aprp is unavailable");
     }
     my $r = addrepo($pool, $aprp, $arch);
     if (!$r) {
-      return ('broken', "repository $aprp is unavailable");
+      return ('broken', "cross repository $aprp is unavailable");
     }
     %repodatas = %oldrepodatas;
   }
@@ -776,9 +776,17 @@ sub set_building {
     # preinstall / vminstall / runscripts bdeps
 
     push @hostdeps, @{$crossdeps{$hostsysroot->{'label'}} || []};
-    my ($eok, $hostdeps) = get_cross_deps($hostsysroot->{'arch'}, $hostsysroot->{'bconf'},$hostsysroot->{'paths'}->[0]->{'project'}, $hostsysroot->{'paths'}->[0]->{'repository'}, $hostsysroot->{'paths'}, \@hostdeps);
+    my ($hosteok, $hostdeps) = get_cross_deps($hostsysroot->{'arch'}, 
+                                          $hostsysroot->{'bconf'},
+                                          $hostsysroot->{'paths'}->[0]->{'project'},
+                                          $hostsysroot->{'paths'}->[0]->{'repository'},
+                                          $hostsysroot->{'paths'}, \@hostdeps);
+    if (!$hosteok) {
+      print "        unresolvables in hostsysroot:\n";
+      print "          $_\n" for @bdeps;
+      return (undef, "unresolvable in hostsysroot: ".join(', ', @bdeps));
+    }
  
-#    my ($eok, $string) = get_cross_deps($hostsysroot->{'arch'}, $hostsysroot->{'bconf'}, $hostsysroot->{'paths'}->[0]->{'project'}, $hostsysroot->{'paths'}->[0]->{'repository'}, $hostsysroot->{'paths'}, \@hostdeps);
     push @hostdeps, @{$hostdeps};
     @hostdeps = unify(@pdeps, @vmdeps, @supports, @hostdeps);
     for (@hostdeps) {
