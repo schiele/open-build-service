@@ -725,8 +725,13 @@ class DbProject < ActiveRecord::Base
 
         #set host hostsystem
         if repo.has_element? :hostsystem
+<<<<<<< HEAD
           hostsystem = DbProject.get_by_name repo.hostsystem.project
           target_repo = hostsystem.repositories.find_by_name repo.hostsystem.repository
+=======
+          DbProject.get_by_name repo.hostsystem.project
+          target_repo = Repository.find_by_project_and_repo_name( repo.hostsystem.project, repo.hostsystem.repository )
+>>>>>>> 879a8c1... [api] validate access to host project
           unless target_repo
             raise SaveError, "Unknown target repository '#{repo.hostsystem.project}/#{repo.hostsystem.repository}'"
           end

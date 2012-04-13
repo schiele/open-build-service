@@ -19,11 +19,6 @@ class CrossBuildTest < ActionController::IntegrationTest
     assert_tag :tag => "path", :attributes => { :project => 'BaseDistro', :repository => 'BaseDistro_repo' }
     assert_tag :tag => "hostsystem", :attributes => { :project => 'BaseDistro2.0', :repository => 'BaseDistro2_repo' }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 879a8c1... [api] validate access to host project
     put "/source/home:tom:CrossBuild/_meta", "<project name='home:tom:CrossBuild'> <title/> <description/>
             <repository name='standard'>
               <path repository='BaseDistro_repo' project='BaseDistro' />
@@ -31,12 +26,7 @@ class CrossBuildTest < ActionController::IntegrationTest
             </repository>
           </project>"
     assert_response 404
-<<<<<<< HEAD
-    assert_tag :tag => "status", :attributes => { :code => "unknown_project" }
->>>>>>> 48193b9... [api] fix the hostsystem test case
-=======
     assert_xml_tag :tag => "status", :attributes => { :code => "unknown_project" }
->>>>>>> 879a8c1... [api] validate access to host project
   end
 
 end
