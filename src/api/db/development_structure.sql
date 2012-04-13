@@ -461,10 +461,14 @@ CREATE TABLE `repositories` (
   `rebuild` enum('transitive','direct','local') DEFAULT NULL,
   `block` enum('all','local','never') DEFAULT NULL,
   `linkedbuild` enum('off','localdep','all') DEFAULT NULL,
+  `hostsystem_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `projects_name_index` (`db_project_id`,`name`,`remote_project_name`),
   KEY `remote_project_name_index` (`remote_project_name`),
-  CONSTRAINT `repositories_ibfk_1` FOREIGN KEY (`db_project_id`) REFERENCES `db_projects` (`id`)
+  KEY `hostsystem` (`hostsystem`),
+  KEY `hostsystem_id` (`hostsystem_id`),
+  CONSTRAINT `repositories_ibfk_1` FOREIGN KEY (`db_project_id`) REFERENCES `db_projects` (`id`),
+  CONSTRAINT `repositories_ibfk_2` FOREIGN KEY (`hostsystem_id`) REFERENCES `repositories` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `roles` (
@@ -868,6 +872,8 @@ INSERT INTO schema_migrations (version) VALUES ('20120222105426');
 INSERT INTO schema_migrations (version) VALUES ('20120223105426');
 
 INSERT INTO schema_migrations (version) VALUES ('20120310104301');
+
+INSERT INTO schema_migrations (version) VALUES ('20120312204300');
 
 INSERT INTO schema_migrations (version) VALUES ('20120529150500');
 

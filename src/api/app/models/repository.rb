@@ -6,6 +6,8 @@ class Repository < ActiveRecord::Base
   has_many :path_elements, :foreign_key => 'parent_id', :dependent => :delete_all, :order => "position"
   has_many :links, :class_name => "PathElement", :foreign_key => 'repository_id'
   has_many :download_stats
+  has_one :hostsystem, :class_name => "Repository", :foreign_key => 'hostsystem'
+
 
   has_and_belongs_to_many :architectures, :order => "position", :list => true
 
