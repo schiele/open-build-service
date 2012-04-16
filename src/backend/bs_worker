@@ -1463,11 +1463,11 @@ sub fetch_and_prepare_rpmlist {
   my $build_meta = ".build.meta";
   my $pkgdir = "$buildroot/.pkgs";
 
-	my $crossbuild = do_crossbuild($buildinfo);
+  my $crossbuild = do_crossbuild($buildinfo);
   my $sysroot;
 
-	if ($crossbuild)
-	{
+  if ($crossbuild)
+  {
     my @sysroots = @{$buildinfo->{'sysroot'}};
     $sysroot = (grep {$_->{'label'} eq $sysrootlabel } @sysroots)[0];
     my $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
@@ -1502,53 +1502,28 @@ sub fetch_and_prepare_rpmlist {
   my @rpmlist;
   my @bdep = @{$buildinfo->{'bdep'} || []};
   @bdep = grep {$_->{'sysroot'} eq $sysrootlabel } @bdep if $crossbuild;
-#### FIXME remove duplicate code
-  if ($crossbuild)
-  {
-    for my $bdep (@bdep) {
-      next if $bdep->{'package'} || $bdep->{'noinstall'} || ($bdep->{'repoarch'} && $bdep->{'repoarch'} eq 'src' );
-      my $bin = $bdep->{'name'};
-      if (-e "$pkgdir/$bin.rpm") {
-        push @rpmlist, "$bin $pkgdir/$bin.rpm";
-      } elsif (-e "$pkgdir/$bin.deb") {
-        push @rpmlist, "$bin $pkgdir/$bin.deb";
-      } else {
-        die("missing package: $bin\n");
-      }
-    }
-    push @rpmlist, "localkiwi $localkiwi/localkiwi.rpm" if $localkiwi && -e "$localkiwi/localkiwi.rpm";
-    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} && $_->{'sysroot'} eq $sysrootlabel } @bdep);
-    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} && $_->{'sysroot'} eq $sysrootlabel } @bdep);
-    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} && $_->{'sysroot'} eq $sysrootlabel } @bdep);
-    if (grep {$_->{'cbpreinstall'}} @bdep) {
-      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} && $_->{'sysroot'} eq $sysrootlabel } @bdep);
-    }
-    if (grep {$_->{'cbinstall'}} @bdep) {
-      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} && $_->{'sysroot'} eq $sysrootlabel } @bdep);
-    }
-  } else {
-    for my $bdep (@bdep) {
-      next if $bdep->{'package'} || $bdep->{'noinstall'} || ($bdep->{'repoarch'} && $bdep->{'repoarch'} eq 'src' );
-      my $bin = $bdep->{'name'};
-      if (-e "$pkgdir/$bin.rpm") {
-        push @rpmlist, "$bin $pkgdir/$bin.rpm";
-      } elsif (-e "$pkgdir/$bin.deb") {
-        push @rpmlist, "$bin $pkgdir/$bin.deb";
-      } else {
-        die("missing package: $bin\n");
-      }
-    }
-    push @rpmlist, "localkiwi $localkiwi/localkiwi.rpm" if $localkiwi && -e "$localkiwi/localkiwi.rpm";
-    push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} } @bdep);
-    push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} } @bdep);
-    push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} } @bdep);
-    if (grep {$_->{'cbpreinstall'}} @bdep) {
-      push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} } @bdep);
-    }
-    if (grep {$_->{'cbinstall'}} @bdep) {
-      push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} } @bdep);
+  for my $bdep (@bdep) {
+    next if $bdep->{'package'} || $bdep->{'noinstall'} || ($bdep->{'repoarch'} && $bdep->{'repoarch'} eq 'src' );
+    my $bin = $bdep->{'name'};
+    if (-e "$pkgdir/$bin.rpm") {
+      push @rpmlist, "$bin $pkgdir/$bin.rpm";
+    } elsif (-e "$pkgdir/$bin.deb") {
+      push @rpmlist, "$bin $pkgdir/$bin.deb";
+    } else {
+      die("missing package: $bin\n");
     }
   }
+  push @rpmlist, "localkiwi $localkiwi/localkiwi.rpm" if $localkiwi && -e "$localkiwi/localkiwi.rpm";
+  push @rpmlist, "preinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'preinstall'} } @bdep);
+  push @rpmlist, "vminstall: ".join(' ', map {$_->{'name'}} grep {$_->{'vminstall'} } @bdep);
+  push @rpmlist, "runscripts: ".join(' ', map {$_->{'name'}} grep {$_->{'runscripts'} } @bdep);
+  if (grep {$_->{'cbpreinstall'}} @bdep) {
+    push @rpmlist, "cbpreinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbpreinstall'} } @bdep);
+  }
+  if (grep {$_->{'cbinstall'}} @bdep) {
+    push @rpmlist, "cbinstall: ".join(' ', map {$_->{'name'}} grep {$_->{'cbinstall'} } @bdep);
+  }
+
 ####
 
   return { rpmlist => \@rpmlist, meta => \@meta };
