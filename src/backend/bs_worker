@@ -1538,14 +1538,7 @@ sub dobuild {
   my $arch = $buildinfo->{'arch'};
   my $hostarch = ($buildinfo->{'hostarch'} || $arch);
   my @sysroots = @{$buildinfo->{'sysroot'} || [] };
-	my $crossbuild = do_crossbuild($buildinfo);
-
-  my @all_archs;
-  push @all_archs, $hostarch, $arch;
-  push @all_archs, map {$_->{'arch'}} @sysroots;
-
-  my %uniq = map{ $_, 1} @all_archs;
-  @all_archs = keys %uniq;
+  my $crossbuild = do_crossbuild($buildinfo);
 
   my ($hostsysroot, $targetsysroot);
 
