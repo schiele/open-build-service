@@ -399,18 +399,21 @@ sub get_cross_deps {
   my $pool = BSSolv::pool->new();
   $pool->settype('deb') if ($bconf->{'type'} || '')eq 'dsc';
 
+  %repodatas = ();
+  my %oldrepodatas = %repodatas;
+  %repodatas = ();
   for my $aprp (@aprps) {
-    my %oldrepodatas = %repodatas;
-    %repodatas = ();
     if (!checkprpaccess($aprp, $prp)) {
+      %repodatas = %oldrepodatas;
       return (undef, "broken: cross repository $aprp is unavailable");
     }
     my $r = addrepo($pool, $aprp, $arch);
     if (!$r) {
+      %repodatas = %oldrepodatas;
       return (undef, "broken: cross repository $aprp is unavailable");
     }
-    %repodatas = %oldrepodatas;
   }
+  %repodatas = %oldrepodatas;
 
   $pool->createwhatprovides();
 
