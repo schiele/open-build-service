@@ -1486,14 +1486,12 @@ sub fetch_and_prepare_rpmlist {
 
    print "fetching sources, ";
    if ($deltamode) {
-     push @meta, getdeltasources($buildinfo, $srcdir);
      print "packages, ";
      getbinaries($buildinfo, $pkgdir, $srcdir, $sysrootlabel);
      my $spec = readstr("$statedir/worker/worker-deltagen.spec", 1) || readstr("worker-deltagen.spec");
      writestr("$srcdir/worker-deltagen.spec", undef, $spec);
      $buildinfo->{'file'} = 'worker-deltagen.spec';
   } else {
-     push @meta, getsources($buildinfo, $srcdir);
      print "packages, ";
      push @meta, getbinaries($buildinfo, $pkgdir, $srcdir, $sysrootlabel);
   }
@@ -1580,7 +1578,7 @@ sub dobuild {
   mkdir($srcdir) || die("mkdir $srcdir: $!\n");
 ######################################## 
 
-	if ($crossbuild)
+  if ($crossbuild)
   {
     foreach my $sr (@sysroots)
     {
@@ -1602,6 +1600,12 @@ sub dobuild {
   }
   ###################################
   unlink("$buildroot/.build.meta");
+  # fetch sources
+  if ($deltamode) {
+   push @meta, getdeltasources($buildinfo, $srcdir);
+  } else {
+    push @meta, getsources($buildinfo, $srcdir);
+  }
   writestr("$buildroot/.build.meta", undef, join("\n", @meta)."\n");
 
   undef $oldpkgdir if ($buildinfo->{'file'} eq '_delta');
