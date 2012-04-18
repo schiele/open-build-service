@@ -1460,7 +1460,6 @@ sub patchkiwi {
 sub fetch_and_prepare_rpmlist {
   my ($buildinfo, $srcdir, $darch, $sysrootlabel) = @_; 
 
-  my $build_meta = ".build.meta";
   my $pkgdir = "$buildroot/.pkgs";
 
   my $crossbuild = do_crossbuild($buildinfo);
@@ -1473,7 +1472,6 @@ sub fetch_and_prepare_rpmlist {
     my $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
 
     if ($sysrootlabel ne $hostsysroot->{'label'}) {
-      $build_meta = ".build.$sysrootlabel.meta";
       $pkgdir = "$buildroot/.pkgs.$sysrootlabel";
     }
   }
