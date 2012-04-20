@@ -399,7 +399,6 @@ sub get_cross_deps {
   my $pool = BSSolv::pool->new();
   $pool->settype('deb') if ($bconf->{'type'} || '')eq 'dsc';
 
-  %repodatas = ();
   my %oldrepodatas = %repodatas;
   %repodatas = ();
   for my $aprp (@aprps) {
