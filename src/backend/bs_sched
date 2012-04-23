@@ -1046,7 +1046,8 @@ sub createdeltajob {
   }
   # create job
   my $prptype = $bconf->{'type'};
-  my ($eok, @bdeps) = Build::get_build($bconf, [], "deltarpm");
+  my ($eok, $bdeps) = Build::get_build($bconf, [], "deltarpm");
+  my @bdeps = @$bdeps;
   if (!$eok) {
     print "        unresolvables:\n";
     print "          $_\n" for @bdeps;
