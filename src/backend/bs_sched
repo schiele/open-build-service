@@ -6037,12 +6037,14 @@ while(1) {
     }
 
     # packtype is now spec/deb
-
+    
+    my $crossdeps;
     if ($experrors{$packid}) {
       # retry expansion of this one
       my @deps = @{$info->{'dep'} || []};
-
-      my ($eok, $edeps) = Build::get_deps($bconf, $subpacks{$info->{'name'}}, @deps);
+      my $eok;
+      my $edeps;
+      ($eok, $edeps, $crossdeps) = Build::get_crossdeps($bconf, $subpacks{$info->{'name'}}, @deps);
       my @edeps = @$edeps;
       if (! $eok) {
 	print "      - $packid ($packtype)\n";
@@ -6267,7 +6269,7 @@ relsynccheck:
         $needed->{$_}++ for map { $dep2src{$_} || $_ } @{$pdeps{$p}};
       }
     }
-    my ($job, $joberror) = set_building($projid, $repoid, $packid, $pdata, $info, $bconf, $subpacks{$info->{'name'}}, $pdeps{$packid}, $prpsearchpath{$prp}, $reason, $relsyncmax, $needed->{$packid} || 0);
+    my ($job, $joberror) = set_building($projid, $repoid, $packid, $pdata, $info, $bconf, $subpacks{$info->{'name'}}, $pdeps{$packid}, $prpsearchpath{$prp}, $reason, $relsyncmax, $needed->{$packid} || 0), $crossdeps;
     if (!$job) {
       # could not start job...
       if ($joberror =~ /^unresolvable: (.*)$/) {
