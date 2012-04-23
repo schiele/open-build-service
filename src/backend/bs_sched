@@ -6269,7 +6269,7 @@ relsynccheck:
         $needed->{$_}++ for map { $dep2src{$_} || $_ } @{$pdeps{$p}};
       }
     }
-    my ($job, $joberror) = set_building($projid, $repoid, $packid, $pdata, $info, $bconf, $subpacks{$info->{'name'}}, $pdeps{$packid}, $prpsearchpath{$prp}, $reason, $relsyncmax, $needed->{$packid} || 0), $crossdeps;
+    my ($job, $joberror) = set_building($projid, $repoid, $packid, $pdata, $info, $bconf, $subpacks{$info->{'name'}}, $pdeps{$packid}, $prpsearchpath{$prp}, $reason, $relsyncmax, $needed->{$packid} || 0, $crossdeps);
     if (!$job) {
       # could not start job...
       if ($joberror =~ /^unresolvable: (.*)$/) {
