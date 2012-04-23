@@ -763,7 +763,6 @@ sub set_building {
     
     # cross dependencies
     my @crossdeps;
-    my %crossdeps = Build::get_crossdeps(@bdeps);
     foreach my $sr_label (keys %crossdeps) {
       # Skip host sysroot - we handle them later
       next if $sr_label eq $hostsysroot->{'label'};
