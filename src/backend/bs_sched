@@ -578,6 +578,7 @@ sub add_crossmarker {
 #         $reason        - what triggered the build
 #         $relsyncmax    - bcnt sync data
 #         $needed        - packages blocked by this job
+#         $crossdeps     - reference to hash of cross dependencies
 #
 # output: $job           - the job identifier
 #         $error         - in case we could not start the job
@@ -588,7 +589,7 @@ sub add_crossmarker {
 # not that hard, was it?
 #
 sub set_building {
-  my ($projid, $repoid, $packid, $pdata, $info, $bconf, $subpacks, $edeps, $prpsearchpath, $reason, $relsyncmax, $needed) = @_;
+  my ($projid, $repoid, $packid, $pdata, $info, $bconf, $subpacks, $edeps, $prpsearchpath, $reason, $relsyncmax, $needed, $crossdeps) = @_;
 
   my $prp = "$projid/$repoid";
   my $srcmd5 = $pdata->{'srcmd5'};
@@ -600,6 +601,9 @@ sub set_building {
   return $job if -s "$myjobsdir/$job";	# obsolete
   my @otherjobs = grep {/^\Q$job\E-[0-9a-f]{32}$/} ls($myjobsdir);
   $job = "$job-$srcmd5";
+
+  my %crossdeps;
+  %crossdeps = %$crossdeps if $crossdeps;
 
   # a new one. expand usedforbuild. write info file.
   my $prptype = $bconf->{'type'};
@@ -643,10 +647,7 @@ sub set_building {
     push @bdeps, grep {/^kiwi-.*:/} @{$info->{'dep'} || []};
   }
 
-
-  my ($eok, $bdeps, $crossbuilddeps) = Build::get_build($bconf, $subpacks, @bdeps);
-  # $crossbuilddeps should be in theorey always empty, since cross deps got expanded earlier.
-  # FIXME: fail if crossbuilddeps i not empty and mark them as unresolvable.
+  my ($eok, $bdeps) = Build::get_build($bconf, $subpacks, @bdeps);
   @bdeps = @$bdeps;
   if (!$eok) {
     print "        unresolvables:\n";
