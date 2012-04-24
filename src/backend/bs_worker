@@ -1686,8 +1686,6 @@ sub dobuild {
     }
     push @args, '--sysroot-target', $targetsysroot->{'path'} ;#FIXME how to define the sysroot which is the targets one?!
   }
-  push @args, '--target', $arch;
-  push @args, '--crossbuild' if $crossbuild;
   push @args, '--logfile', "$buildroot/.build.log";
   push @args, '--release', "$release" if defined $release;
   push @args, '--debug' if $buildinfo->{'debuginfo'};

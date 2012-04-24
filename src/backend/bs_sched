@@ -244,7 +244,7 @@ my %repodatas;		# our repository knowledge
 
 # add :full repo to pool
 sub addrepo {
-  my ($pool, $prp) = @_;
+  my ($pool, $prp, $arch) = @_;
 
   my $now = time();
   if ($repodatas{$prp} && $repodatas{$prp}->{'lastscan'} && $repodatas{$prp}->{'lastscan'} > $now - 8*3600) {
@@ -267,16 +267,16 @@ sub addrepo {
   if ($remoteprojs{$projid}) {
     return addrepo_remote($pool, $prp, $remoteprojs{$projid}, $arch);
   }
-  return addrepo_scan($pool, $prp);
+  return addrepo_scan($pool, $prp, $arch);
 }
 
 # add :full repo to pool, make sure repo is up-to-data by
 # scanning the directory
 sub addrepo_scan {
-  my ($pool, $prp) = @_;
+  my ($pool, $prp, $arch) = @_;
 
   print "    scanning repo $prp...\n";
-  my $dir = "$reporoot/$prp/$myarch/:full";
+  my $dir = "$reporoot/$prp/$arch/:full";
   my $cache;
   my $dirty;
   if (-s "$dir.solv") {
@@ -288,10 +288,10 @@ sub addrepo_scan {
     }
   } elsif ($BSConfig::enable_download_on_demand) {
     my ($projid) = split('/', $prp, 2);
-    my @doddata = grep {$_->{'arch'} && $_->{'arch'} eq $myarch} @{$projpacks->{$projid}->{'download'} || []};
+    my @doddata = grep {$_->{'arch'} && $_->{'arch'} eq $arch} @{$projpacks->{$projid}->{'download'} || []};
     if (@doddata) {
       my $doddata = $doddata[0];
-      eval {$cache = Meta::parse("$dir/$doddata->{'metafile'}", $doddata->{'mtype'}, { 'arch' => [ $myarch ] })};
+      eval {$cache = Meta::parse("$dir/$doddata->{'metafile'}", $doddata->{'mtype'}, { 'arch' => [ $arch ] })};
       if ($@) {
 	print "    download on demand: cannot read metadata: $@\n";
 	return undef;
@@ -699,11 +699,11 @@ sub set_building {
         @{$sysroot->{'paths'}} = expandsearchpath($sysroot->{'paths'}->[0]->{'project'},$repo, $sysroot->{'arch'});
         }
     }
-    $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
 
     $targetsysroot = Build::get_targetsysroot($bconf);
     $targetsysroot = (grep {$_->{'label'} eq $targetsysroot } @sysroots)[0];
 
+    $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
     # combine searchpaths for getting combined prj conf
     my @host_repos;
     for my $repo (@{$hostsysroot->{'paths'}}) {
@@ -711,16 +711,16 @@ sub set_building {
     }
 
     #load prjconf of hostsysroot
-    my $hostsysroot_conf = getconfig($hostsysroot->{'arch'}, \@host_repos );
+    $hostsysroot->{'bconf'} = getconfig($hostsysroot->{'arch'}, \@host_repos );
 
-    @pdeps = Build::get_preinstalls($hostsysroot_conf);
-    @vmdeps = Build::get_vminstalls($hostsysroot_conf);
-    @hostdeps = Build::get_required($hostsysroot_conf);
-    @supports = Build::get_supports($hostsysroot_conf);
+    @pdeps = Build::get_preinstalls($hostsysroot->{'bconf'});
+    @vmdeps = Build::get_vminstalls($hostsysroot->{'bconf'});
+    @hostdeps = Build::get_required($hostsysroot->{'bconf'});
+    @supports = Build::get_supports($hostsysroot->{'bconf'});
     my @nosupports = Build::get_nosupports($bconf, $hostsysroot->{'label'}); 
     my %nosupports = map { $_=> $_} @nosupports;
     @supports = grep{!$nosupports{'!'.$_} } @supports; 
-    %runscripts = map {$_ => 1} Build::get_runscripts($hostsysroot_conf);
+    %runscripts = map {$_ => 1} Build::get_runscripts($hostsysroot->{'bconf'});
 
   } else {
     @pdeps = Build::get_preinstalls($bconf);
@@ -2571,13 +2571,13 @@ sub fetchremoteconfig {
 }
 
 sub addrepo_remote {
-  my ($pool, $prp, $remoteproj) = @_;
+  my ($pool, $prp, $remoteproj, $arch) = @_;
 
   my ($projid, $repoid) = split('/', $prp, 2);
   return undef if !$remoteproj || $remoteproj->{'error'};
   print "    fetching remote repository state for $prp\n";
   my $param = {
-    'uri' => "$remoteproj->{'remoteurl'}/build/$remoteproj->{'remoteproject'}/$repoid/$myarch/_repository",
+    'uri' => "$remoteproj->{'remoteurl'}/build/$remoteproj->{'remoteproject'}/$repoid/$arch/_repository",
     'timeout' => 200,
     'receiver' => \&BSHTTP::cpio_receiver,
     'proxy' => $proxy,
@@ -2596,7 +2596,7 @@ sub addrepo_remote {
     warn($@);
     my $error = $@;
     $error =~ s/\n$//s;
-    addretryevent({'type' => 'repository', 'project' => $projid, 'repository' => $repoid, 'arch' => $myarch}) if $error !~ /remote error:/;
+    addretryevent({'type' => 'repository', 'project' => $projid, 'repository' => $repoid, 'arch' => $arch}) if $error !~ /remote error:/;
     return undef;
   }
   my %cpio = map {$_->{'name'} => $_->{'data'}} @{$cpio || []};
@@ -3035,7 +3035,7 @@ sub checkkiwiimage {
       print "        repository $aprp is unavailable";
       return ('broken', "repository $aprp is unavailable");
     }
-    my $r = addrepo($pool, $aprp);
+    my $r = addrepo($pool, $aprp, $myarch);
     if (!$r) {
       print "      - $packid (kiwi-image)\n";
       print "        repository $aprp is unavailable";
@@ -3154,7 +3154,7 @@ sub rebuildkiwiimage {
 	print "        repository $aprp is unavailable";
 	return ('broken', "repository $aprp is unavailable");
       }
-      my $r = addrepo($pool, $aprp);
+      my $r = addrepo($pool, $aprp, $myarch);
       if (!$r) {
         print "      - $packid (kiwi-image)\n";
         print "        repository $aprp is unavailable";
