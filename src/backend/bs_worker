@@ -1587,6 +1587,15 @@ sub dobuild {
   rm_rf($srcdir) if -d $srcdir;
 
   mkdir($srcdir) || die("mkdir $srcdir: $!\n");
+
+  unlink("$buildroot/.build.meta");
+  # fetch sources
+  if ($deltamode) {
+   push @meta, getdeltasources($buildinfo, $srcdir);
+  } else {
+    push @meta, getsources($buildinfo, $srcdir);
+  }
+
 ######################################## 
 
   if ($crossbuild)
@@ -1610,13 +1619,7 @@ sub dobuild {
     writestr("$buildroot/$rpmlist", undef, join("\n", @{$dlresult->{'rpmlist'}})."\n");
   }
   ###################################
-  unlink("$buildroot/.build.meta");
-  # fetch sources
-  if ($deltamode) {
-   push @meta, getdeltasources($buildinfo, $srcdir);
-  } else {
-    push @meta, getsources($buildinfo, $srcdir);
-  }
+
   writestr("$buildroot/.build.meta", undef, join("\n", @meta)."\n");
 
   undef $oldpkgdir if ($buildinfo->{'file'} eq '_delta');
