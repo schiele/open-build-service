@@ -647,8 +647,8 @@ sub set_building {
     push @bdeps, grep {/^kiwi-.*:/} @{$info->{'dep'} || []};
   }
 
-  my ($eok, $bdeps) = Build::get_build($bconf, $subpacks, @bdeps);
-  @bdeps = @$bdeps;
+  my $eok;
+  ($eok, @bdeps) = Build::get_build($bconf, $subpacks, @bdeps);
   if (!$eok) {
     print "        unresolvables:\n";
     print "          $_\n" for @bdeps;
@@ -3269,8 +3269,8 @@ sub checkkiwiproduct {
     no warnings 'redefine';
     local *Build::expand = $ownexpand;
     use warnings 'redefine';
-    my ($eok, $kdeps) = Build::get_build($bconf, [], @kdeps);
-    @kdeps = @$kdeps; 
+    my $eok;
+    my ($eok, @kdeps) = Build::get_build($bconf, [], @kdeps);
     if (!$eok) {
       print "        unresolvables:\n";
       print "          $_\n" for @kdeps;
