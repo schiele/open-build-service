@@ -637,8 +637,6 @@ sub set_building {
 
   # calculate packages needed for building
   my @bdeps = ( @{$info->{'dep'} || []}, @{$info->{'prereq'} || []} );
-  # get original bdeps state which reflects the plain deps of the targets
-  my @origin_bdeps = @bdeps;
 
   if ($packtype eq 'kiwi') {
     # packages used for build environment setup
@@ -731,7 +729,6 @@ sub set_building {
   my @cbpdeps = Build::get_cbpreinstalls($bconf); # crossbuild preinstall
   my @cbdeps = Build::get_cbinstalls($bconf);  # crossbuild install
   my %bdeps = map {$_ => 1} @bdeps;
-  my %origin_bdeps = map {$_ => 1} @origin_bdeps;
   my %pdeps = map {$_ => 1} @pdeps;
   my %vmdeps = map {$_ => 1} @vmdeps;
   my %cbpdeps = map {$_ => 1} @cbpdeps;
