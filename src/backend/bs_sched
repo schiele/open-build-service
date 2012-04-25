@@ -245,6 +245,7 @@ my %repodatas;		# our repository knowledge
 # add :full repo to pool
 sub addrepo {
   my ($pool, $prp, $arch) = @_;
+  $arch = $myarch unless defined $arch;
 
   my $now = time();
   if ($repodatas{$prp} && $repodatas{$prp}->{'lastscan'} && $repodatas{$prp}->{'lastscan'} > $now - 8*3600) {
@@ -3031,7 +3032,7 @@ sub checkkiwiimage {
       print "        repository $aprp is unavailable";
       return ('broken', "repository $aprp is unavailable");
     }
-    my $r = addrepo($pool, $aprp, $myarch);
+    my $r = addrepo($pool, $aprp);
     if (!$r) {
       print "      - $packid (kiwi-image)\n";
       print "        repository $aprp is unavailable";
@@ -3149,7 +3150,7 @@ sub rebuildkiwiimage {
 	print "        repository $aprp is unavailable";
 	return ('broken', "repository $aprp is unavailable");
       }
-      my $r = addrepo($pool, $aprp, $myarch);
+      my $r = addrepo($pool, $aprp);
       if (!$r) {
         print "      - $packid (kiwi-image)\n";
         print "        repository $aprp is unavailable";
@@ -3248,7 +3249,7 @@ sub checkkiwiproduct {
       }
       $myarch = $BSConfig::localarch if $myarch eq 'local' && $BSConfig::localarch;
       $repodatas{$aprp} = {'dontwrite' => 1} if $myarch ne $savemyarch;
-      my $r = addrepo($pool, $aprp, $myarch);
+      my $r = addrepo($pool, $aprp);
       delete $repodatas{$aprp} if $myarch ne $savemyarch;
       $myarch = $savemyarch;
       if (!$r) {
@@ -5050,7 +5051,7 @@ while(1) {
 	  print "reading packages of repository $projid/$repoid\n";
 	  delete $repodatas{$prp};
 	  my $pool = BSSolv::pool->new();
-          addrepo($pool, $prp, $myarch);
+          addrepo($pool, $prp);
 	  undef $pool;
 	  $changed_high{$prp} = 2;
           delete $repounchanged{$prp};
@@ -5615,7 +5616,7 @@ while(1) {
       $error = "repository '$rprp' is unavailable";
       last;
     }
-    my $r = addrepo($pool, $rprp, $myarch);
+    my $r = addrepo($pool, $rprp);
     if (!$r) {
       $error = "repository '$rprp' is unavailable";
       last;
