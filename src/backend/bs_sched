@@ -3056,8 +3056,7 @@ sub checkkiwiimage {
   local *Build::expand = $ownexpand;
   use warnings 'redefine';
 
-  my ($eok, $edeps) = Build::get_deps($bconf, [], @deps);
-  my @edeps = @$edeps;
+  my ($eok, @edeps) = Build::get_deps($bconf, [], @deps);
   if (!$eok) {
     print "      - $packid (kiwi-image)\n";
     print "        unresolvables:\n";
