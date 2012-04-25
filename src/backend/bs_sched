@@ -3268,7 +3268,7 @@ sub checkkiwiproduct {
     local *Build::expand = $ownexpand;
     use warnings 'redefine';
     my $eok;
-    my ($eok, @kdeps) = Build::get_build($bconf, [], @kdeps);
+    ($eok, @kdeps) = Build::get_build($bconf, [], @kdeps);
     if (!$eok) {
       print "        unresolvables:\n";
       print "          $_\n" for @kdeps;
