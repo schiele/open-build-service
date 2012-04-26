@@ -5710,7 +5710,8 @@ while(1) {
       $pdeps{$packid} = \@deps;
       next;
     }
-    my ($eok, @edeps) = Build::get_deps($bconf, $subpacks{$info->{'name'}}, @deps);
+    my ($eok, $edeps) = Build::get_deps($bconf, $subpacks{$info->{'name'}}, @deps);
+    my @edeps = @$edeps;
     if (! $eok) {
       @edeps = @deps;
       $experrors{$packid} = 1;
