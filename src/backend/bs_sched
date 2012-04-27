@@ -426,9 +426,9 @@ sub get_cross_deps {
   local *Build::expand = $ownexpand;
   use warnings 'redefine';
 
-  my ($eok, $edeps) = Build::get_deps($bconf, [], @{$pkgs});
+  my ($eok, @edeps) = Build::get_deps($bconf, [], @{$pkgs});
 
-  return ($eok, $edeps);
+  return ($eok, \@edeps);
 }
 
 #######################################################################
@@ -3054,8 +3054,7 @@ sub checkkiwiimage {
   local *Build::expand = $ownexpand;
   use warnings 'redefine';
 
-  my ($eok, $edeps) = Build::get_deps($bconf, [], @deps);
-  my @edeps = @$edeps;
+  my ($eok, @edeps) = Build::get_deps($bconf, [], @deps);
   if (!$eok) {
     print "      - $packid (kiwi-image)\n";
     print "        unresolvables:\n";
@@ -5711,8 +5710,7 @@ while(1) {
       $pdeps{$packid} = \@deps;
       next;
     }
-    my ($eok, $edeps) = Build::get_deps($bconf, $subpacks{$info->{'name'}}, @deps);
-    my @edeps = @$edeps;
+    my ($eok, @edeps) = Build::get_deps($bconf, $subpacks{$info->{'name'}}, @deps);
     if (! $eok) {
       @edeps = @deps;
       $experrors{$packid} = 1;
@@ -6039,9 +6037,8 @@ while(1) {
       # retry expansion of this one
       my @deps = @{$info->{'dep'} || []};
       my $eok;
-      my $edeps;
-      ($eok, $edeps, $crossdeps) = Build::get_crossdeps($bconf, $subpacks{$info->{'name'}}, @deps);
-      my @edeps = @$edeps;
+      my @edeps;
+      ($eok, $crossdeps, @edeps) = Build::get_crossdeps($bconf, $subpacks{$info->{'name'}}, @deps);
       if (! $eok) {
 	print "      - $packid ($packtype)\n";
 	print "        unresolvables:\n";
