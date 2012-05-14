@@ -1545,7 +1545,7 @@ sub dobuild {
   my $packid = $buildinfo->{'package'};
   my $repoid = $buildinfo->{'repository'};
   my $arch = $buildinfo->{'arch'};
-  my $hostarch = ($buildinfo->{'hostarch'} || $arch);
+  my $helperarch = $buildinfo->{'hostarch'} || $arch;
   my @sysroots = @{$buildinfo->{'sysroot'} || [] };
   my $crossbuild = do_crossbuild($buildinfo);
   my $deltamode = do_deltamode($buildinfo);
@@ -1559,7 +1559,6 @@ sub dobuild {
   }
 
 
-  my $helperarch = $buildinfo->{'hostarch'} || $arch;
   my $helper = '';
   /^\Q$helperarch\E:(.*)$/ && ($helper = $1) for @{$BSCando::cando{$hostarch}};
 
