@@ -1232,7 +1232,6 @@ sub getbinaries {
   my ($buildinfo, $dir, $srcdir, $sysrootlabel) = @_;
 
   my $sysroot;
-  my $kiwimode = do_kiwimode($buildinfo);
   my $crossbuild = do_crossbuild($buildinfo);
   if ($crossbuild)
   {
@@ -1241,6 +1240,7 @@ sub getbinaries {
   }
 
   mkdir_p($dir);
+  my $kiwimode = do_kiwimode($buildinfo);
 
   if ($kiwimode && $buildinfo->{'imagetype'} && $buildinfo->{'imagetype'}->[0] eq 'product') {
     return getbinaries_kiwiproduct($buildinfo, $dir, $srcdir);
