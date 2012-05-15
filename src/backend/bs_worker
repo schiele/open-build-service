@@ -1579,9 +1579,9 @@ sub dobuild {
   }
   unlink("$buildroot/.build.meta");
 
-  rm_rf($oldpkgdir) if -d $oldpkgdir;
   rm_rf("$buildroot/.build.packages") if -d "$buildroot/.build.packages";
   rm_rf($srcdir) if -d $srcdir;
+  rm_rf($oldpkgdir) if -d $oldpkgdir;
 
   my @meta;
   print "fetching sources, ";
@@ -1590,6 +1590,7 @@ sub dobuild {
   # fetch sources
   if ($deltamode) {
     push @meta, getdeltasources($buildinfo, $srcdir);
+    undef $oldpkgdir;
   } else {
     push @meta, getsources($buildinfo, $srcdir);
   }
@@ -1620,8 +1621,6 @@ sub dobuild {
   ###################################
 
   writestr("$buildroot/.build.meta", undef, join("\n", @meta)."\n");
-
-  undef $oldpkgdir if ($buildinfo->{'file'} eq '_delta');
 
   getoldpackages($buildinfo, $oldpkgdir) if $oldpkgdir && !$kiwimode;
 
