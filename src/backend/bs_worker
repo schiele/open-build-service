@@ -1577,8 +1577,8 @@ sub dobuild {
     push @targs, "mount", "-t", "tmpfs", "-osize=${vmdisk_rootsize}M", "none", $buildroot;
     qsystem(@targs) && die("mount tmpfs failed: $!\n");
   }
-  unlink("$buildroot/.build.meta");
 
+  unlink("$buildroot/.build.meta");
   rm_rf("$buildroot/.build.packages") if -d "$buildroot/.build.packages";
   rm_rf($srcdir) if -d $srcdir;
   rm_rf($oldpkgdir) if -d $oldpkgdir;
