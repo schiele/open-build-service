@@ -1280,7 +1280,7 @@ sub getbinaries {
     for my $repo (@{$buildinfo->{'syspath'} || []}) {
       last if !@todo;
       my $server = $repo->{'server'} || $buildinfo->{'reposerver'};
-      my $got = getbinaries_cache($dir, $repo->{'server'}, $repo->{'project'}, $repo->{'repository'}, $buildinfo->{'arch'}, 1, \@todo);
+      my $got = getbinaries_cache($dir, $server, $repo->{'project'}, $repo->{'repository'}, $buildinfo->{'arch'}, 1, \@todo);
       @todo = grep {!$got->{$_}} @todo;
     }
     die("getbinaries: missing packages: @todo\n") if @todo;
