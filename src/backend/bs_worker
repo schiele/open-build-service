@@ -1589,7 +1589,7 @@ sub dobuild {
   unlink("$buildroot/.build.meta");
   # fetch sources
   if ($deltamode) {
-   push @meta, getdeltasources($buildinfo, $srcdir);
+    push @meta, getdeltasources($buildinfo, $srcdir);
   } else {
     push @meta, getsources($buildinfo, $srcdir);
   }
