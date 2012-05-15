@@ -1679,7 +1679,7 @@ sub dobuild {
   push @args, '--dist', "$buildroot/.build.config";
   push @args, '--rpmlist', "$buildroot/.build.rpmlist";
   
-  if ( $crossbuild)
+  if ($crossbuild)
   {
     foreach my $sysroot (@sysroots)
     {
