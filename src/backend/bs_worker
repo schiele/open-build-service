@@ -1256,9 +1256,9 @@ sub getbinaries {
   my @bdep = @{$buildinfo->{'bdep'} || []};
   @bdep = grep {$_->{'sysroot'} eq $sysrootlabel } @bdep if $crossbuild;
 
-  my %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src' } @bdep;
-  my %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src' } @bdep;
-  @bdep = map {$_->{'name'}} grep {($_->{'repoarch'} || '') ne 'src' } @bdep;
+  my %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src'} @bdep;
+  my %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src'} @bdep;
+  @bdep = map {$_->{'name'}} grep {($_->{'repoarch'} || '') ne 'src'} @bdep;
 
   my %done;
   my @todo = @bdep;
