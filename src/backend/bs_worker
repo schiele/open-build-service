@@ -1255,7 +1255,6 @@ sub getbinaries {
 
   my @bdep = @{$buildinfo->{'bdep'} || []};
   @bdep = grep {$_->{'sysroot'} eq $sysrootlabel } @bdep if $crossbuild;
-  my @orig_bdep = @bdep;
 
   my %bdep_noinstall = map {$_->{'name'} => 1} grep {$_->{'noinstall'} && ($_->{'repoarch'} || '') ne 'src' } @bdep;
   my %bdep_notmeta = map {$_->{'name'} => 1} grep {$_->{'notmeta'} && ($_->{'repoarch'} || '') ne 'src' } @bdep;
@@ -1354,7 +1353,7 @@ sub getbinaries {
       $subpackre = substr($subpackre, 1);
       $subpackre = qr/$subpackre/;
     }
-    for my $dep (sort {"$a/" cmp "$b/"} map {$_->{'name'}} grep {!$_->{'notmeta'} } @orig_bdep) {
+    for my $dep (sort {"$a/" cmp "$b/"} map {$_->{'name'}} grep {!$_->{'notmeta'} } @bdep) {
       my $m;
       $m = readstr("$dir/$dep.meta", 1) if $meta{$dep};
       if (!$m) {
