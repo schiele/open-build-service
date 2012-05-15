@@ -1568,26 +1568,25 @@ sub dobuild {
   print " using helper $helper" if $helper;
   print "\n";
 
+  my $srcdir    = "$buildroot/.build-srcdir";
+  my $oldpkgdir = "$buildroot/.build.oldpackages";
+
   if ($vm_tmpfs_mode) {
     my @targs;
     # Note that the xen/kvm vmdisk_rootsize is in MB
     push @targs, "mount", "-t", "tmpfs", "-osize=${vmdisk_rootsize}M", "none", $buildroot;
     qsystem(@targs) && die("mount tmpfs failed: $!\n");
   }
-
-  my $srcdir    = "$buildroot/.build-srcdir";
-  my $oldpkgdir = "$buildroot/.build.oldpackages";
-  my @meta;
-  my $rpmlist;
+  unlink("$buildroot/.build.meta");
 
   rm_rf($oldpkgdir) if -d $oldpkgdir;
   rm_rf("$buildroot/.build.packages") if -d "$buildroot/.build.packages";
   rm_rf($srcdir) if -d $srcdir;
 
+  my @meta;
   print "fetching sources, ";
   mkdir($srcdir) || die("mkdir $srcdir: $!\n");
 
-  unlink("$buildroot/.build.meta");
   # fetch sources
   if ($deltamode) {
     push @meta, getdeltasources($buildinfo, $srcdir);
@@ -1601,6 +1600,7 @@ sub dobuild {
   {
     foreach my $sr (@sysroots)
     {
+      my $rpmlist;
       if ( $sr->{'label'} eq $hostsysroot->{'label'} )
       {
         $rpmlist = ".build.rpmlist";
@@ -1612,7 +1612,7 @@ sub dobuild {
       writestr("$buildroot/$rpmlist", undef, join("\n", @{$dlresult->{'rpmlist'}})."\n");
     }
   } else {
-    $rpmlist = ".build.rpmlist";
+    my $rpmlist = ".build.rpmlist";
     my $dlresult = fetch_and_prepare_rpmlist($buildinfo, $srcdir, $arch, undef);
     push @meta, @{$dlresult->{'meta'}};
     writestr("$buildroot/$rpmlist", undef, join("\n", @{$dlresult->{'rpmlist'}})."\n");
