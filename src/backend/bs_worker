@@ -1494,7 +1494,6 @@ sub fetch_and_prepare_rpmlist {
 
   my @meta;
 
-   print "fetching sources, ";
    if ($deltamode) {
      print "packages, ";
      getbinaries($buildinfo, $pkgdir, $srcdir, $sysrootlabel);
@@ -1584,6 +1583,7 @@ sub dobuild {
   rm_rf("$buildroot/.build.packages") if -d "$buildroot/.build.packages";
   rm_rf($srcdir) if -d $srcdir;
 
+  print "fetching sources, ";
   mkdir($srcdir) || die("mkdir $srcdir: $!\n");
 
   unlink("$buildroot/.build.meta");
