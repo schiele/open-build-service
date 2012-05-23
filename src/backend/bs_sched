@@ -778,15 +778,6 @@ print "hostsysroot: ", Dumper($hostsysroot);
     
     # cross dependencies
     my @crossdeps;
-    foreach my $sr_label (keys %crossdeps) {
-      # Skip host sysroot - we handle them later
-      next if $sr_label eq $hostsysroot->{'label'};
-      # skip not configured sysrootes
-      next unless grep {$_->{'label'} eq $sr_label} @sysroots;
-      for (@{$crossdeps{$sr_label}}) {
-        push @crossdeps, { name => $_, sysroot => $sr_label };
-      }
-    }
     @crossdeps = unify(@crossdeps);
 
     # Append the host- and cross-(build)deps to the full bdeps list - so they do not get unified by name
@@ -830,6 +821,21 @@ print "hostsysroot: ", Dumper($hostsysroot);
       'project' => $_->{'project'}, 'package' => $_->{'package'}, 'srcmd5' => $_->{'srcmd5'},
     }} @{$info->{'extrasource'}};
   }
+  # push information about host- and targetsysroot into @sysroots:
+  push @sysroots, { 'paths' => $hostsysroot->{'paths'},
+                    'arch' => $hostsysroot->{'arch'},
+                    'label' => $hostsysroot->{'label'},
+                    'path' => $hostsysroot->{'path'},
+                    'project' => $hostsysroot->{'project'},
+                    'repository' => $hostsysroot->{'repository'}
+                  };
+  push @sysroots, { 'paths' => $targetsysroot->{'paths'},
+                    'arch' => $targetsysroot->{'arch'},
+                    'label' => $targetsysroot->{'label'},
+                    'path' => $targetsysroot->{'path'},
+                    'project' => $targetsysroot->{'project'},
+                    'repository' => $targetsysroot->{'repository'}
+                  };
 
   my $vmd5 = $pdata->{'verifymd5'} || $pdata->{'srcmd5'};
   my $binfo = {
