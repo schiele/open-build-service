@@ -564,6 +564,21 @@ sub add_crossmarker {
   BSUtil::touch($marker);
 }
 
+sub get_hostsysroot {
+  my ($projid, $repoid, $hostarch) = @_;
+  my $hostsysroot;
+  $hostsysroot = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'hostsystem'} || "";
+  return undef if !$hostsysroot;
+  $hostsysroot->{'arch'} = $hostarch;
+  $hostsysroot->{'label'} = "hostsystem";
+  return $hostsysroot;
+}
+
+sub get_targetsysroot {
+  my ($projid, $repoid, $arch) = @_;
+  $targetsysroot = (grep {$_->{'label'} eq $targetsysroot } @sysroots)[0];
+
+
 #
 # set_building  - create a new build job
 #
@@ -684,6 +699,9 @@ sub set_building {
   writexml("$reporoot/$prp/$myarch/$packid/.reason", "$reporoot/$prp/$myarch/$packid/reason", $reason, $BSXML::buildreason);
 
   my @sysroots = Build::get_sysroots($bconf);
+  my $hostsysroot = get_hostsysroot($projid, $repoid, $bconf->{'hostarch'});
+print "#############\n";
+print "hostsysroot: ", Dumper($hostsysroot);
   my $crossbuild = 0;
   my (@pdeps, @vmdeps, %runscripts, @supports);
   $crossbuild = 1 if @sysroots > 0;
@@ -699,10 +717,8 @@ sub set_building {
         }
     }
 
-    $targetsysroot = Build::get_targetsysroot($bconf);
-    $targetsysroot = (grep {$_->{'label'} eq $targetsysroot } @sysroots)[0];
+    $targetsysroot = get_targetsysroot($bconf);
 
-    $hostsysroot = (grep {$_->{'path'} eq '/' } @sysroots)[0];
     # combine searchpaths for getting combined prj conf
     my @host_repos;
     for my $repo (@{$hostsysroot->{'paths'}}) {
@@ -778,8 +794,8 @@ sub set_building {
     push @hostdeps, @{$crossdeps{$hostsysroot->{'label'}} || []};
     my ($hosteok, $hostdeps) = get_cross_deps($hostsysroot->{'arch'}, 
                                           $hostsysroot->{'bconf'},
-                                          $hostsysroot->{'paths'}->[0]->{'project'},
-                                          $hostsysroot->{'paths'}->[0]->{'repository'},
+                                          $hostsysroot->{'project'},
+                                          $hostsysroot->{'repository'},
                                           $hostsysroot->{'paths'}, \@hostdeps);
     
     if (!$hosteok) {
