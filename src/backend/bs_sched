@@ -822,6 +822,7 @@ print "hostsysroot: ", Dumper($hostsysroot);
     }} @{$info->{'extrasource'}};
   }
   # push information about host- and targetsysroot into @sysroots:
+  my @sysroots;
   push @sysroots, { 'paths' => $hostsysroot->{'paths'},
                     'arch' => $hostsysroot->{'arch'},
                     'label' => $hostsysroot->{'label'},
