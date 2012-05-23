@@ -575,7 +575,6 @@ sub get_hostsysroot {
     next unless grep {$_ eq $hostsysroot->{'arch'}} @{$repo->{'arch'} || []};
     @{$hostsysroot->{'paths'}} = expandsearchpath($hostsysroot->{'project'},$repo, $hostsysroot->{'arch'});
   }
-  $hostsysroot->{'paths'} = 
   $hostsysroot->{'path'} = "/";
   $hostsysroot->{'label'} = "hostsystem";
   return $hostsysroot;
@@ -722,7 +721,7 @@ print "#############\n";
 print "hostsysroot: ", Dumper($hostsysroot);
   my $crossbuild = 0;
   my (@pdeps, @vmdeps, %runscripts, @supports);
-  $crossbuild = 1 if $hostsysroot;
+  $crossbuild = 1 if defined($hostsysroot);
   my ($targetsysroot, @hostdeps);
   if ($crossbuild) {
 
@@ -764,7 +763,6 @@ print "hostsysroot: ", Dumper($hostsysroot);
   if ($crossbuild)
   {
     @bdeps = unify(@$edeps, @bdeps, @cbpdeps, @cbdeps);
-    # delete bconf from hash, not needed anymore
   } else {
     @bdeps = unify(@pdeps, @vmdeps, @$edeps, @bdeps, @cbpdeps, @cbdeps);
   }
@@ -820,6 +818,7 @@ print "hostsysroot: ", Dumper($hostsysroot);
 
     # No need to unify target-deps together with host- and cross-deps
     push @bdeps, @crossdeps, @hostdeps;
+    # delete bconf from hash, not needed anymore
     delete $hostsysroot->{'bconf'};
   }
 
@@ -831,20 +830,22 @@ print "hostsysroot: ", Dumper($hostsysroot);
   }
   # push information about host- and targetsysroot into @sysroots:
   my @sysroots;
-  push @sysroots, { 'paths' => $hostsysroot->{'paths'},
-                    'arch' => $hostsysroot->{'arch'},
-                    'label' => $hostsysroot->{'label'},
-                    'path' => $hostsysroot->{'path'},
-                    'project' => $hostsysroot->{'project'},
-                    'repository' => $hostsysroot->{'repository'}
-                  };
-  push @sysroots, { 'paths' => $targetsysroot->{'paths'},
-                    'arch' => $targetsysroot->{'arch'},
-                    'label' => $targetsysroot->{'label'},
-                    'path' => $targetsysroot->{'path'},
-                    'project' => $targetsysroot->{'project'},
-                    'repository' => $targetsysroot->{'repository'}
-                  };
+  if ($crossbuild) {
+    push @sysroots, { 'paths' => $hostsysroot->{'paths'},
+                      'arch' => $hostsysroot->{'arch'},
+                      'label' => $hostsysroot->{'label'},
+                      'path' => $hostsysroot->{'path'},
+                      'project' => $hostsysroot->{'project'},
+                      'repository' => $hostsysroot->{'repository'}
+                    };
+    push @sysroots, { 'paths' => $targetsysroot->{'paths'},
+                      'arch' => $targetsysroot->{'arch'},
+                      'label' => $targetsysroot->{'label'},
+                      'path' => $targetsysroot->{'path'},
+                      'project' => $targetsysroot->{'project'},
+                      'repository' => $targetsysroot->{'repository'}
+                    };
+  }
 
   my $vmd5 = $pdata->{'verifymd5'} || $pdata->{'srcmd5'};
   my $binfo = {
