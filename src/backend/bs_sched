@@ -570,7 +570,7 @@ sub get_hostsysroot {
   $hostsysroot = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'hostsystem'} || "";
 # add paths
   return undef if !$hostsysroot;
-  $hostsysroot->{'paths'} = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'path'} || "";
+  $hostsysroot->{'paths'} = (grep { $_->{'name'} eq $hostsystem->{'repository'}} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'path'} || "";
   $hostsysroot->{'arch'} = $hostarch;
   $hostsysroot->{'label'} = "hostsystem";
   return $hostsysroot;
