@@ -568,11 +568,15 @@ sub get_hostsysroot {
   my ($projid, $repoid, $hostarch) = @_;
   my $hostsysroot;
   $hostsysroot = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'hostsystem'} || "";
-# add paths
   return undef if !$hostsysroot;
-#  $hostsysroot->{'paths'} = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'paths'} || "";
-  $hostsysroot->{'path'} = "/";
   $hostsysroot->{'arch'} = $hostarch;
+  my $repos = $projpacks->{$hostsysroot->{'project'}}->{'repository'} || []; 
+  for my $repo (@$repos) {
+    next unless grep {$_ eq $hostsysroot->{'arch'}} @{$repo->{'arch'} || []};
+    @{$hostsysroot->{'paths'}} = expandsearchpath($hostsysroot->{'project'},$repo, $hostsysroot->{'arch'});
+  }
+  $hostsysroot->{'paths'} = 
+  $hostsysroot->{'path'} = "/";
   $hostsysroot->{'label'} = "hostsystem";
   return $hostsysroot;
 }
