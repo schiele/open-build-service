@@ -582,9 +582,11 @@ sub get_targetsysroot {
   $ts->{'label'} = "target";
   $ts->{'project'} = $projid;
   $ts->{'repository'} = $repoid;
-  $ts->{'path'} = "/opt/tcc/target_sysroot"; #FIXME find better defaul #FIXME find better defaultt
-  $ts->{'paths'} = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'path'} || "";
   $ts->{'arch'} = $arch; 
+  $ts->{'path'} = "/opt/tcc/target_sysroot"; #FIXME find better defaul #FIXME find better defaultt
+  @{$ts->{'paths'}} = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'path'} || [];
+  @{$ts->{'paths'}} = expandsearchpath($ts->{'project'}, $ts->{'repository'}, $ts->{'arch'});
+
   return $ts;
 }
 
@@ -707,24 +709,14 @@ sub set_building {
   $reason->{'time'} = $now;
   writexml("$reporoot/$prp/$myarch/$packid/.reason", "$reporoot/$prp/$myarch/$packid/reason", $reason, $BSXML::buildreason);
 
-  my @sysroots = Build::get_sysroots($bconf);
   my $hostsysroot = get_hostsysroot($projid, $repoid, $bconf->{'hostarch'});
 print "#############\n";
 print "hostsysroot: ", Dumper($hostsysroot);
   my $crossbuild = 0;
   my (@pdeps, @vmdeps, %runscripts, @supports);
-  $crossbuild = 1 if @sysroots > 0;
+  $crossbuild = 1 if $hostsysroot;
   my ($targetsysroot, @hostdeps);
   if ($crossbuild) {
-    for my $sysroot (@sysroots) {
-      my $repos = $projpacks->{$sysroot->{'paths'}->[0]->{'project'}}->{'repository'} || [];
-      for my $repo (@$repos) {
-        next unless grep {$_ eq $sysroot->{'arch'}} @{$repo->{'arch'} || []};
-        next unless grep {$_->{'repository'} eq $repo->{'name'}} @{$sysroot->{'paths'} || []};
-        my $repoid = $repo->{'name'};
-        @{$sysroot->{'paths'}} = expandsearchpath($sysroot->{'paths'}->[0]->{'project'},$repo, $sysroot->{'arch'});
-        }
-    }
 
     $targetsysroot = get_targetsysroot($projid, $repoid, $myarch);
 
