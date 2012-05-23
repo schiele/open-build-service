@@ -570,7 +570,7 @@ sub get_hostsysroot {
   $hostsysroot = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'hostsystem'} || "";
 # add paths
   return undef if !$hostsysroot;
-  $hostsysroot->{'paths'} = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'paths'} || "";
+#  $hostsysroot->{'paths'} = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'paths'} || "";
   $hostsysroot->{'path'} = "/";
   $hostsysroot->{'arch'} = $hostarch;
   $hostsysroot->{'label'} = "hostsystem";
@@ -578,15 +578,18 @@ sub get_hostsysroot {
 }
 
 sub get_targetsysroot {
-  my ($projid, $repoid, $arch) = @_;
+  my ($projid, $repoid, $searchpath, $arch) = @_;
   my $ts;
   $ts->{'label'} = "target";
   $ts->{'project'} = $projid;
   $ts->{'repository'} = $repoid;
   $ts->{'arch'} = $arch; 
   $ts->{'path'} = "/opt/tcc/target_sysroot"; #FIXME find better defaul #FIXME find better defaultt
-  @{$ts->{'paths'}} = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'path'} || [];
-  @{$ts->{'paths'}} = expandsearchpath($ts->{'project'}, $ts->{'repository'}, $ts->{'arch'});
+#  @{$ts->{'paths'}} = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'path'} || [];
+
+#  my $repos = $projpacks->{$projid}->{'repository'} || [];
+#  @{$ts->{'paths'}} = expandsearchpath($ts->{'project'}, $repos, $ts->{'arch'});
+  $ts->{'paths'} = $searchpath;
 
   return $ts;
 }
@@ -719,7 +722,7 @@ print "hostsysroot: ", Dumper($hostsysroot);
   my ($targetsysroot, @hostdeps);
   if ($crossbuild) {
 
-    $targetsysroot = get_targetsysroot($projid, $repoid, $myarch);
+    $targetsysroot = get_targetsysroot($projid, $repoid, $searchpath, $myarch);
 
     # combine searchpaths for getting combined prj conf
     my @host_repos;
