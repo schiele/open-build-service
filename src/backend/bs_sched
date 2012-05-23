@@ -576,16 +576,14 @@ sub get_hostsysroot {
 
 sub get_targetsysroot {
   my ($projid, $repoid, $arch) = @_;
-  my $targetsysroot = (grep {$_->{'label'} eq $targetsysroot } @sysroots)[0];
-Sysroot: target_armv7hl tcc B1LX armv7hl /opt/b1/armv7hl-b1-linux-gnueabi/sys-root
-
+  my $ts;
   $ts->{'label'} = "target";
   $ts->{'project'} = $projid;
   $ts->{'repository'} = $repoid;
   $ts->{'path'} = "/opt/tcc/target_sysroot"; #FIXME find better defaul #FIXME find better defaultt
   $ts->{'paths'} = (grep { $_->{'name'} eq $repoid} @{$projpacks->{$projid}->{'repository'} || []})[0]->{'path'} || ""
   $ts->{'arch'} = $arch; 
-  return $targetsysroot;
+  return $ts;
 }
 
 #
