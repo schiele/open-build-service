@@ -577,6 +577,15 @@ sub get_hostsysroot {
   }
   $hostsysroot->{'path'} = "/";
   $hostsysroot->{'label'} = "hostsystem";
+
+  # combine searchpaths for getting combined prj conf
+  my @host_repos;
+  for my $repo (@{$hostsysroot->{'paths'}}) {
+    push @host_repos, "$repo->{'project'}/$repo->{'repository'}";
+  }
+  #load prjconf of hostsysroot
+  $hostsysroot->{'bconf'} = getconfig($hostsysroot->{'arch'}, \@host_repos );
+
   return $hostsysroot;
 }
 
@@ -609,6 +618,7 @@ sub get_targetsysroot {
 #         $relsyncmax    - bcnt sync data
 #         $needed        - packages blocked by this job
 #         $crossdeps     - reference to hash of cross dependencies
+#         $hostdeps      - reference to array of host dependencies
 #
 # output: $job           - the job identifier
 #         $error         - in case we could not start the job
@@ -619,7 +629,7 @@ sub get_targetsysroot {
 # not that hard, was it?
 #
 sub set_building {
-  my ($projid, $repoid, $packid, $pdata, $info, $bconf, $subpacks, $edeps, $prpsearchpath, $reason, $relsyncmax, $needed, $crossdeps) = @_;
+  my ($projid, $repoid, $packid, $pdata, $info, $bconf, $subpacks, $edeps, $prpsearchpath, $reason, $relsyncmax, $needed, $crossdeps, $hostdeps) = @_;
 
   my $prp = "$projid/$repoid";
   my $srcmd5 = $pdata->{'srcmd5'};
@@ -713,7 +723,7 @@ sub set_building {
   writexml("$reporoot/$prp/$myarch/$packid/.reason", "$reporoot/$prp/$myarch/$packid/reason", $reason, $BSXML::buildreason);
 
   my $hostsysroot = get_hostsysroot($projid, $repoid, $bconf->{'hostarch'});
-print "#############\n";
+print "#############\n"; #FIXME remove debug
 print "hostsysroot: ", Dumper($hostsysroot);
   my $crossbuild = 0;
   my (@pdeps, @vmdeps, %runscripts, @supports);
@@ -722,15 +732,6 @@ print "hostsysroot: ", Dumper($hostsysroot);
   if ($crossbuild) {
 
     $targetsysroot = get_targetsysroot($projid, $repoid, $searchpath, $myarch);
-
-    # combine searchpaths for getting combined prj conf
-    my @host_repos;
-    for my $repo (@{$hostsysroot->{'paths'}}) {
-      push @host_repos, "$repo->{'project'}/$repo->{'repository'}";
-    }
-
-    #load prjconf of hostsysroot
-    $hostsysroot->{'bconf'} = getconfig($hostsysroot->{'arch'}, \@host_repos );
 
     @pdeps = Build::get_preinstalls($hostsysroot->{'bconf'});
     @vmdeps = Build::get_vminstalls($hostsysroot->{'bconf'});
@@ -777,32 +778,11 @@ print "hostsysroot: ", Dumper($hostsysroot);
   }
 
   if ($crossbuild) {
-    
-    # cross dependencies
-    my @crossdeps;
-    @crossdeps = unify(@crossdeps);
 
     # Append the host- and cross-(build)deps to the full bdeps list - so they do not get unified by name
     # preinstall / vminstall / runscripts bdeps
 
-    push @hostdeps, @{$crossdeps{$hostsysroot->{'label'}} || []};
-    my ($hosteok, $hostdeps) = get_cross_deps($hostsysroot->{'arch'}, 
-                                          $hostsysroot->{'bconf'},
-                                          $hostsysroot->{'project'},
-                                          $hostsysroot->{'repository'},
-                                          $hostsysroot->{'paths'}, \@hostdeps);
-    
-    if (!$hosteok) {
-      if (grep { $_ =~/^broken/} @{$hostdeps}) {
-        print "        @{$hostdeps}\n";
-        return (undef, @{$hostdeps});
-      }
-      print "        unresolvables in hostsysroot:\n";
-      print "          $_\n" for @{$hostdeps};
-      return (undef, "unresolvable: in hostsysroot: ".join(', ', @{$hostdeps}));
-    }
- 
-    @hostdeps = @{$hostdeps};
+    my @hostdeps = @{$hostdeps};
     @hostdeps = unify(@pdeps, @vmdeps, @supports, @hostdeps);
     for (@hostdeps) {
       $_ = {'name' => $_};
@@ -6062,6 +6042,7 @@ while(1) {
     # packtype is now spec/deb
     
     my $crossdeps;
+    my $hostdeps;
     if ($experrors{$packid}) {
       # retry expansion of this one
       my @deps = @{$info->{'dep'} || []};
@@ -6075,6 +6056,24 @@ while(1) {
 	$packstatus{$packid} = 'unresolvable';
 	$packerror{$packid} = join(', ', @edeps);
 	next;
+      }
+      push @hostdeps, @{$crossdeps{$hostsysroot->{'label'}} || []};
+      my $hostsysroot = get_hostsysroot($projid, $repoid, $bconf->{'hostarch'}); 
+      if ($hostsysroot) {
+        my ($eok, $hostdeps) = get_cross_deps($hostsysroot->{'arch'},
+                                              $hostsysroot->{'bconf'},
+                                              $hostsysroot->{'project'},
+                                              $hostsysroot->{'repository'},
+                                              $hostsysroot->{'paths'}, \@hostdeps);
+
+        if (!$eok) {
+          print "        unresolvables in hostsysroot:\n";
+          print "          $_\n" for @{$hostdeps};
+          $packstatus{$packid} = 'unresolvable';
+          $packerror{$packid} = join(', ', @{$hostdeps});
+          next;
+        }
+        undef $hostsysroot; #not needed anymore
       }
       delete $experrors{$packid};
       $pdeps{$packid} = \@edeps;
@@ -6291,7 +6290,7 @@ relsynccheck:
         $needed->{$_}++ for map { $dep2src{$_} || $_ } @{$pdeps{$p}};
       }
     }
-    my ($job, $joberror) = set_building($projid, $repoid, $packid, $pdata, $info, $bconf, $subpacks{$info->{'name'}}, $pdeps{$packid}, $prpsearchpath{$prp}, $reason, $relsyncmax, $needed->{$packid} || 0, $crossdeps);
+    my ($job, $joberror) = set_building($projid, $repoid, $packid, $pdata, $info, $bconf, $subpacks{$info->{'name'}}, $pdeps{$packid}, $prpsearchpath{$prp}, $reason, $relsyncmax, $needed->{$packid} || 0, $crossdeps, $hostdeps);
     if (!$job) {
       # could not start job...
       if ($joberror =~ /^unresolvable: (.*)$/) {
