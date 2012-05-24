@@ -719,14 +719,14 @@ sub set_building {
   writexml("$reporoot/$prp/$myarch/$packid/.reason", "$reporoot/$prp/$myarch/$packid/reason", $reason, $BSXML::buildreason);
 
   my $hostsysroot = get_hostsysroot($projid, $repoid, $bconf->{'hostarch'});
-  my %crossdeps;
-  %crossdeps = %$crossdeps if $crossdeps;
-  my @hostdeps = @{$crossdeps->{$hostsysroot->{'label'}}};
+  my (%crossdeps, @hostdeps);
   my $crossbuild = 0;
   my (@pdeps, @vmdeps, %runscripts, @supports);
   $crossbuild = 1 if defined($hostsysroot);
   my ($targetsysroot);
   if ($crossbuild) {
+    %crossdeps = %$crossdeps;
+    @hostdeps = @{$crossdeps->{$hostsysroot->{'label'}}};
 
     $targetsysroot = get_targetsysroot($projid, $repoid, $searchpath, $myarch);
 
