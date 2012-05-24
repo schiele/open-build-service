@@ -728,14 +728,13 @@ print "hostsysroot: ", Dumper($hostsysroot);
   my $crossbuild = 0;
   my (@pdeps, @vmdeps, %runscripts, @supports);
   $crossbuild = 1 if defined($hostsysroot);
-  my ($targetsysroot, @hostdeps);
+  my ($targetsysroot);
   if ($crossbuild) {
 
     $targetsysroot = get_targetsysroot($projid, $repoid, $searchpath, $myarch);
 
     @pdeps = Build::get_preinstalls($hostsysroot->{'bconf'});
     @vmdeps = Build::get_vminstalls($hostsysroot->{'bconf'});
-    @hostdeps = Build::get_required($hostsysroot->{'bconf'});
     @supports = Build::get_supports($hostsysroot->{'bconf'});
     my @nosupports = Build::get_nosupports($bconf, $hostsysroot->{'label'}); 
     my %nosupports = map { $_=> $_} @nosupports;
@@ -782,7 +781,7 @@ print "hostsysroot: ", Dumper($hostsysroot);
     # Append the host- and cross-(build)deps to the full bdeps list - so they do not get unified by name
     # preinstall / vminstall / runscripts bdeps
 
-    my @hostdeps = @{$hostdeps};
+    my @hostdeps = @$hostdeps;
     @hostdeps = unify(@pdeps, @vmdeps, @supports, @hostdeps);
     for (@hostdeps) {
       $_ = {'name' => $_};
@@ -793,7 +792,7 @@ print "hostsysroot: ", Dumper($hostsysroot);
     }
 
     # No need to unify target-deps together with host- and cross-deps
-    push @bdeps, @crossdeps, @hostdeps;
+    push @bdeps, @hostdeps;
     # delete bconf from hash, not needed anymore
     delete $hostsysroot->{'bconf'};
   }
@@ -6057,8 +6056,10 @@ while(1) {
 	$packerror{$packid} = join(', ', @edeps);
 	next;
       }
-      push @hostdeps, @{$crossdeps{$hostsysroot->{'label'}} || []};
-      my $hostsysroot = get_hostsysroot($projid, $repoid, $bconf->{'hostarch'}); 
+      my ($hostsysroot, @hostdeps);
+      $hostsysroot = get_hostsysroot($projid, $repoid, $bconf->{'hostarch'});
+      @hostdeps = Build::get_required($hostsysroot->{'bconf'});
+      push @hostdeps, @{$crossdeps->{$hostsysroot->{'label'}} || []};
       if ($hostsysroot) {
         my ($eok, $hostdeps) = get_cross_deps($hostsysroot->{'arch'},
                                               $hostsysroot->{'bconf'},
