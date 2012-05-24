@@ -774,6 +774,16 @@ sub set_building {
   }
 
   if ($crossbuild) {
+    # cross dependencies
+    my @crossdeps;
+    foreach my $sr_label (keys %crossdeps) {
+      # Skip host sysroot - we handle them later
+      next if $sr_label eq $hostsysroot->{'label'};
+      for (@{$crossdeps{$sr_label}}) {
+        push @crossdeps, { name => $_, sysroot => $sr_label };
+      }
+    }
+    @crossdeps = unify(@crossdeps);
 
     # Append the host- and cross-(build)deps to the full bdeps list - so they do not get unified by name
     # preinstall / vminstall / runscripts bdeps
