@@ -455,6 +455,7 @@ our $buildinfo = [
 	'arch',
 	'hostarch',     # for cross build
 	'targetsysroot',
+	'targetsysrootpath',
      [[ 'sysroot' => 
 	'label',
 	'project',

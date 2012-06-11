@@ -590,13 +590,13 @@ sub get_hostsysroot {
 }
 
 sub get_targetsysroot {
-  my ($projid, $repoid, $searchpath, $arch) = @_;
+  my ($projid, $repoid, $searchpath, $arch, $bconf) = @_;
   my $ts;
   $ts->{'label'} = "targetsystem";
   $ts->{'project'} = $projid;
   $ts->{'repository'} = $repoid;
   $ts->{'arch'} = $arch; 
-  $ts->{'path'} = "/opt/tcc/target_sysroot"; #FIXME find better defaul #FIXME find better defaultt
+  $ts->{'path'} = $bconf->{'targetsysroot'} || "/opt/tcc/targetsysroot";
   $ts->{'paths'} = $searchpath; #FIXME set to [] to use default paths? this is just a copy of them..
 
   return $ts;
@@ -728,7 +728,7 @@ sub set_building {
     %crossdeps = %$crossdeps;
     @hostdeps = @{$crossdeps->{$hostsysroot->{'label'}}};
 
-    $targetsysroot = get_targetsysroot($projid, $repoid, $searchpath, $myarch);
+    $targetsysroot = get_targetsysroot($projid, $repoid, $searchpath, $myarch, $bconf);
 
     @pdeps = Build::get_preinstalls($hostsysroot->{'bconf'});
     @vmdeps = Build::get_vminstalls($hostsysroot->{'bconf'});
