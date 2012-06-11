@@ -1601,15 +1601,17 @@ sub dobuild {
   {
     foreach my $sr (@sysroots)
     {
+      my $dlresult = fetch_and_prepare_rpmlist($buildinfo, $srcdir, $sr->{'arch'}, $sr->{'label'});
       my $rpmlist;
       if ( $sr->{'label'} eq $hostsysroot->{'label'} )
       {
         $rpmlist = ".build.rpmlist";
+        my @hostsysmeta = map {$_ = "$_\@$hostsysroot->{'project'}/$hostsysroot->{'repository'}/$hostsysroot->{'arch'}"} @{$dlresult->{'meta'}};
+        push @meta, @hostsysmeta;
       } else {
         $rpmlist = ".build.$sr->{'label'}.rpmlist";
+        push @meta, @{$dlresult->{'meta'}} if ($sr->{'label'} eq $buildinfo->{'targetsysroot'});
       }
-      my $dlresult = fetch_and_prepare_rpmlist($buildinfo, $srcdir, $sr->{'arch'}, $sr->{'label'});
-      push @meta, @{$dlresult->{'meta'}} if ($sr->{'label'} eq $buildinfo->{'targetsysroot'});
       writestr("$buildroot/$rpmlist", undef, join("\n", @{$dlresult->{'rpmlist'}})."\n");
     }
   } else {

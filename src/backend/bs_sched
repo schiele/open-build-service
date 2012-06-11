@@ -6266,6 +6266,11 @@ while(1) {
 	@meta = grep {!/\//} @meta;
 	@new_meta = grep {!/\//} @new_meta;
       }
+      my @cross_meta;
+      if (defined  get_hostsysroot($projid, $repoid, $bconf->{'hostarch'}) ) {
+        @cross_meta = grep { $_ =~ /\@/ } @meta;
+        @meta = grep { $_ !~ /\@/ } @meta;
+      }
       if (@meta == @new_meta && join('\n', @meta) eq join('\n', @new_meta)) {
 	# print "      - $packid ($packtype)\n";
 	# print "        nothing changed (looked harder)\n";
