@@ -1606,7 +1606,7 @@ sub dobuild {
       if ( $sr->{'label'} eq $hostsysroot->{'label'} )
       {
         $rpmlist = ".build.rpmlist";
-        my @hostsysmeta = map {$_ = "$_\@$hostsysroot->{'project'}/$hostsysroot->{'repository'}/$hostsysroot->{'arch'}"} @{$dlresult->{'meta'}};
+        my @hostsysmeta = map {$_ = "$_\@$hostsysroot->{'project'}::$hostsysroot->{'repository'}::$hostsysroot->{'arch'}"} @{$dlresult->{'meta'}};
         push @meta, @hostsysmeta;
       } else {
         $rpmlist = ".build.$sr->{'label'}.rpmlist";
